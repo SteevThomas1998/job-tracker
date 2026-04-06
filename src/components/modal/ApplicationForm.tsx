@@ -48,11 +48,13 @@ export default function ApplicationForm({ initialData, onSubmit, onCancel }: Pro
   }
 
   const inputClass = (field: keyof ApplicationFormData) =>
-    `w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-      errors[field] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+    `w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-gray-200 dark:placeholder-gray-500 ${
+      errors[field]
+        ? 'border-red-400 bg-red-50 dark:bg-red-900/20 dark:border-red-700'
+        : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'
     }`
 
-  const labelClass = 'block text-xs font-medium text-gray-700 mb-1'
+  const labelClass = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -157,11 +159,11 @@ export default function ApplicationForm({ initialData, onSubmit, onCancel }: Pro
         />
       </div>
 
-      <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
+      <div className="flex gap-3 justify-end pt-2 border-t border-gray-100 dark:border-gray-800">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           Cancel
         </button>

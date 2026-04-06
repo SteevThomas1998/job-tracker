@@ -1,4 +1,4 @@
-import type { JobApplication } from '../../types'
+import type { JobApplication, ApplicationStatus } from '../../types'
 import ApplicationCard from '../cards/ApplicationCard'
 import EmptyState from '../common/EmptyState'
 
@@ -8,9 +8,10 @@ interface Props {
   onAdd: () => void
   onEdit: (app: JobApplication) => void
   onDelete: (id: string) => void
+  onStatusChange: (id: string, status: ApplicationStatus) => void
 }
 
-export default function ApplicationList({ applications, hasFilters, onAdd, onEdit, onDelete }: Props) {
+export default function ApplicationList({ applications, hasFilters, onAdd, onEdit, onDelete, onStatusChange }: Props) {
   if (applications.length === 0) {
     return <EmptyState hasFilters={hasFilters} onAdd={onAdd} />
   }
@@ -18,7 +19,7 @@ export default function ApplicationList({ applications, hasFilters, onAdd, onEdi
   return (
     <div className="space-y-3">
       {applications.map((app) => (
-        <ApplicationCard key={app.id} app={app} onEdit={onEdit} onDelete={onDelete} />
+        <ApplicationCard key={app.id} app={app} onEdit={onEdit} onDelete={onDelete} onStatusChange={onStatusChange} />
       ))}
     </div>
   )

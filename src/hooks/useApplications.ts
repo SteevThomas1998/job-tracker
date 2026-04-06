@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { JobApplication, ApplicationFormData } from '../types'
+import type { JobApplication, ApplicationFormData, ApplicationStatus } from '../types'
 import { loadApplications, saveApplications } from '../utils/storage'
 
 export function useApplications() {
@@ -26,11 +26,19 @@ export function useApplications() {
     saveApplications(updated)
   }
 
+  function patchStatus(id: string, status: ApplicationStatus) {
+    const updated = applications.map((app) =>
+      app.id === id ? { ...app, status, updatedAt: new Date().toISOString() } : app,
+    )
+    setApplications(updated)
+    saveApplications(updated)
+  }
+
   function deleteApplication(id: string) {
     const updated = applications.filter((app) => app.id !== id)
     setApplications(updated)
     saveApplications(updated)
   }
 
-  return { applications, addApplication, updateApplication, deleteApplication }
+  return { applications, addApplication, updateApplication, patchStatus, deleteApplication }
 }

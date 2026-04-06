@@ -6,16 +6,18 @@ interface Props {
   onChange: (filters: FilterState) => void
 }
 
+const selectClass = 'px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 cursor-pointer'
+
 export default function FilterBar({ filters, onChange }: Props) {
   function set<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     onChange({ ...filters, [key]: value })
   }
 
   return (
-    <div className="flex flex-wrap gap-3 items-center">
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 shadow-sm flex flex-wrap gap-3 items-center">
       <div className="relative flex-1 min-w-48">
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -27,14 +29,14 @@ export default function FilterBar({ filters, onChange }: Props) {
           placeholder="Search company, title, location..."
           value={filters.searchQuery}
           onChange={(e) => set('searchQuery', e.target.value)}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
         />
       </div>
 
       <select
         value={filters.statusFilter}
         onChange={(e) => set('statusFilter', e.target.value as ApplicationStatus | 'All')}
-        className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        className={selectClass}
       >
         <option value="All">All Statuses</option>
         {APPLICATION_STATUSES.map((s) => (
@@ -48,7 +50,7 @@ export default function FilterBar({ filters, onChange }: Props) {
           const [field, dir] = e.target.value.split(':')
           onChange({ ...filters, sortField: field as FilterState['sortField'], sortDirection: dir as FilterState['sortDirection'] })
         }}
-        className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        className={selectClass}
       >
         <option value="dateApplied:desc">Date Applied (newest)</option>
         <option value="dateApplied:asc">Date Applied (oldest)</option>

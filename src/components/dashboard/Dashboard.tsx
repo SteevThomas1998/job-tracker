@@ -5,8 +5,11 @@ import { useFilters } from '../../hooks/useFilters'
 import StatsBar from './StatsBar'
 import FilterBar from './FilterBar'
 import ApplicationList from './ApplicationList'
+import KanbanBoard from '../kanban/KanbanBoard'
 import Modal from '../modal/Modal'
 import ApplicationForm from '../modal/ApplicationForm'
+
+type ViewMode = 'list' | 'kanban'
 
 interface Props {
   externalAddOpen?: boolean
@@ -14,10 +17,11 @@ interface Props {
 }
 
 export default function Dashboard({ externalAddOpen = false, onExternalAddClose }: Props) {
-  const { applications, addApplication, updateApplication, deleteApplication } = useApplications()
+  const { applications, addApplication, updateApplication, patchStatus, deleteApplication } = useApplications()
   const { filters, setFilters, filtered } = useFilters(applications)
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null)
   const [isAdding, setIsAdding] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   useEffect(() => {
     if (externalAddOpen) {
@@ -38,8 +42,7 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose 
     setEditingApp(null)
   }
 
-  const hasFilters =
-    filters.statusFilter !== 'All' || filters.searchQuery.trim() !== ''
+  const hasFilters = filters.statusFilter !== 'All' || filters.searchQuery.trim() !== ''
 
   return (
     <>
@@ -52,16 +55,51 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose 
           }
         />
         <FilterBar filters={filters} onChange={setFilters} />
-        <div className="text-xs text-gray-400">
-          {filtered.length} of {applications.length} application{applications.length !== 1 ? 's' : ''}
+
+        {/* View toggle + count */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium tracking-wide uppercase text-gray-400 dark:text-gray-500">
+            {filtered.length} of {applications.length} application{applications.length !== 1 ? 's' : ''}
+          </p>
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              title="List view"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              title="Board view"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <ApplicationList
-          applications={filtered}
-          hasFilters={hasFilters}
-          onAdd={() => setIsAdding(true)}
-          onEdit={setEditingApp}
-          onDelete={deleteApplication}
-        />
+
+        {viewMode === 'list' ? (
+          <ApplicationList
+            applications={filtered}
+            hasFilters={hasFilters}
+            onAdd={() => setIsAdding(true)}
+            onEdit={setEditingApp}
+            onDelete={deleteApplication}
+            onStatusChange={patchStatus}
+          />
+        ) : (
+          <KanbanBoard
+            applications={filtered}
+            onStatusChange={patchStatus}
+            onEdit={setEditingApp}
+            onDelete={deleteApplication}
+          />
+        )}
       </div>
 
       <Modal isOpen={isAdding} onClose={handleAddClose} title="Add Application">

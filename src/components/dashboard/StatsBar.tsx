@@ -20,10 +20,10 @@ export default function StatsBar({ applications, activeFilter, onFilterChange }:
     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
       <button
         onClick={() => onFilterChange('All')}
-        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
           activeFilter === 'All'
-            ? 'bg-gray-800 text-white border-gray-800'
-            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+            ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100 shadow-sm'
+            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
         }`}
       >
         All ({total})
@@ -31,16 +31,16 @@ export default function StatsBar({ applications, activeFilter, onFilterChange }:
       {APPLICATION_STATUSES.map((status) => {
         const count = counts[status] ?? 0
         if (count === 0) return null
-        const { bg, text, border } = STATUS_CONFIG[status]
+        const { bg, text, border, darkBg, darkText, darkBorder } = STATUS_CONFIG[status]
         const isActive = activeFilter === status
         return (
           <button
             key={status}
             onClick={() => onFilterChange(status)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
               isActive
-                ? `${bg} ${text} ${border} ring-2 ring-offset-1 ring-current`
-                : `${bg} ${text} ${border} opacity-70 hover:opacity-100`
+                ? `${bg} ${text} ${border} ${darkBg} ${darkText} ${darkBorder} ring-2 ring-offset-1 ring-current shadow-sm`
+                : `${bg} ${text} ${border} ${darkBg} ${darkText} ${darkBorder} opacity-70 hover:opacity-100 hover:scale-105`
             }`}
           >
             {status} ({count})
