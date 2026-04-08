@@ -171,9 +171,20 @@ function parseEmail(p: IngestPayload): ParsedEmail | null {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
+  // Input size limits — prevent DoS via large payloads
+  const rawBody = JSON.stringify(req.body ?? {})
+  if (rawBody.length > 100_000) {
+    return res.status(413).json({ error: 'Payload too large' })
+  }
+
   const payload = req.body as Partial<IngestPayload>
   if (!payload.token || !payload.subject || !payload.body) {
     return res.status(400).json({ error: 'Missing required fields: token, subject, body' })
+  }
+
+  // Field length limits
+  if (payload.subject.length > 500 || payload.from!.length > 500 || payload.body.length > 50_000) {
+    return res.status(400).json({ error: 'Field exceeds maximum length' })
   }
 
   const adminClient = createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'))
@@ -227,7 +238,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (insertError) {
     console.error('Supabase insert error:', insertError)
-    return res.status(500).json({ error: 'Database insert failed', detail: insertError.message })
+    return res.status(500).json({ error: 'Failed to process email' })
   }
 
   return res.status(200).json({ ok: true, company: parsed.company, job_title: parsed.job_title, status: parsed.status })
