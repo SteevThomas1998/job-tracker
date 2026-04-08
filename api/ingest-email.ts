@@ -103,7 +103,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       messages: [{ role: 'user', content: buildPrompt(payload as IngestPayload) }],
     })
 
-    const rawText = (message.content[0] as { type: 'text'; text: string }).text.trim()
+    const rawText = (message.content[0] as { type: 'text'; text: string }).text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim()
 
     let parsed: ParsedApplication
     try {
