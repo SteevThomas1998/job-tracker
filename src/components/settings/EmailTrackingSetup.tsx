@@ -5,7 +5,7 @@ const WEBHOOK_URL = 'https://job-tracker-seven-weld.vercel.app/api/ingest-email'
 
 function buildScript(token: string): string {
   return `// ═══════════════════════════════════════════════════════════════════
-//  Job Tracker — Gmail Automation
+//  Stealyn — Gmail Automation
 //  1. Go to https://script.google.com → New project
 //  2. Paste this entire script (replace any existing code)
 //  3. Run markExistingEmailsAsProcessed() ONCE manually

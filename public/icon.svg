@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#2563EB"/>
+  <!-- Stylised S -->
+  <path d="M38.5 20H27a5 5 0 0 0-5 5v1a5 5 0 0 0 5 5h10a5 5 0 0 1 5 5v1a5 5 0 0 1-5 5H25.5" stroke="white" stroke-width="4" stroke-linecap="round"/>
+</svg>
