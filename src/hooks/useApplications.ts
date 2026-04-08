@@ -47,6 +47,18 @@ export function useApplications() {
         if (data) setApplications((data as Row[]).map(fromRow))
         setLoading(false)
       })
+
+    // Live updates: new rows inserted by the email webhook appear instantly
+    const channel = supabase
+      .channel('job_applications_inserts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'job_applications' },
+        (payload) => setApplications((prev) => [fromRow(payload.new as Row), ...prev]),
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   async function addApplication(data: ApplicationFormData) {

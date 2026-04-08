@@ -41,7 +41,7 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
 
   return (
     <>
-      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 ${accentBorder} rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}>
+      <div className={`relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 ${accentBorder} rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${statusOpen ? 'z-10' : ''}`}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
