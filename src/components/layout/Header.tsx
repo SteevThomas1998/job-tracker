@@ -2,9 +2,11 @@ interface Props {
   onAdd: () => void
   onToggleDark: () => void
   isDark: boolean
+  userEmail?: string
+  onSignOut: () => void
 }
 
-export default function Header({ onAdd, onToggleDark, isDark }: Props) {
+export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignOut }: Props) {
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 dark:bg-gray-900/95 dark:border-gray-800 sticky top-0 z-30 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -30,6 +32,23 @@ export default function Header({ onAdd, onToggleDark, isDark }: Props) {
               </svg>
             )}
           </button>
+
+          {userEmail && (
+            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 max-w-[160px] truncate">
+              {userEmail}
+            </span>
+          )}
+
+          <button
+            onClick={onSignOut}
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            title="Sign out"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+
           <button
             onClick={onAdd}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
