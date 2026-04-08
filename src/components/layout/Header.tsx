@@ -17,7 +17,7 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
               <path d="M15 7H9a2 2 0 0 0-2 2v.5A2 2 0 0 0 9 11.5h6a2 2 0 0 1 2 2v.5A2 2 0 0 1 15 16H8.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">Stealyn</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">Stealeen</h1>
         </div>
         <div className="flex items-center gap-2">
           <button

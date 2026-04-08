@@ -47,7 +47,7 @@ export default function AuthPage({ onSignIn, onSignUp }: Props) {
               <path d="M15 7H9a2 2 0 0 0-2 2v.5A2 2 0 0 0 9 11.5h6a2 2 0 0 1 2 2v.5A2 2 0 0 1 15 16H8.5" stroke="white" strokeWidth="2.25" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">Stealyn</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">Stealeen</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
           </p>
