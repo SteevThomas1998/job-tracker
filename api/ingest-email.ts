@@ -38,7 +38,7 @@ function requireEnv(name: string): string {
 }
 
 function buildPrompt(p: IngestPayload): string {
-  return `You are a job-application data extractor. Analyze the email and return ONLY a valid JSON object — no markdown, no explanation, no code fences.
+  return `You are a strict job-application email classifier and data extractor.
 
 ## Email
 Subject: ${p.subject}
@@ -48,10 +48,30 @@ Date: ${p.date}
 ${p.body.slice(0, 6000)}
 ---
 
-## Required JSON shape
+## Step 1: Is this a job application email?
+A job application email is ONLY one of these:
+- Confirmation that the sender applied for a job/position/role
+- Recruiter or hiring manager reaching out about a job opportunity
+- Interview invitation or scheduling for a job
+- Technical assessment or coding challenge for a job
+- Job offer or salary negotiation
+- Rejection from a job application
+
+NOT a job application email:
+- Visa applications, immigration, passport, police certificates
+- Financial aid, scholarships, course applications (e.g. Coursera)
+- Bank accounts, credit cards, insurance, financial products
+- Gaming, shopping, subscriptions, promotions
+- Any "application" that is not for employment
+
+## Step 2: Return JSON
+If NOT a job email, return exactly: {"is_job_email": false}
+
+If IS a job email, return:
 {
-  "company": "<company name, required>",
-  "job_title": "<job title, required>",
+  "is_job_email": true,
+  "company": "<hiring company name, required>",
+  "job_title": "<job title or role, required>",
   "location": "<city/state/Remote or null>",
   "job_url": "<URL from email or null>",
   "status": "<one of: Saved | Applied | Phone Screen | Interview Scheduled | Technical Assessment | Offer Received | Rejected | Withdrawn>",
@@ -63,15 +83,14 @@ ${p.body.slice(0, 6000)}
 
 ## Status rules
 - Application confirmation → "Applied"
-- Recruiter outreach, no interview yet → "Phone Screen"
+- Recruiter outreach, no interview scheduled → "Phone Screen"
 - Interview invitation → "Interview Scheduled"
 - Take-home test / coding challenge → "Technical Assessment"
 - Offer letter or verbal offer → "Offer Received"
-- Rejection email → "Rejected"
-- Acknowledgement / not yet reviewed → "Saved"
+- Rejection → "Rejected"
 - Candidate withdrawing → "Withdrawn"
 
-"company" and "job_title" are required — infer from context if needed. Use null for any field you cannot determine.`
+Return ONLY valid JSON — no markdown, no explanation, no code fences.`
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -110,12 +129,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .replace(/\s*```$/, '')
       .trim()
 
-    let parsed: ParsedApplication
+    let parsed: ParsedApplication & { is_job_email?: boolean }
     try {
-      parsed = JSON.parse(rawText) as ParsedApplication
+      parsed = JSON.parse(rawText)
     } catch {
       console.error('Non-JSON response from Claude:', rawText)
       return res.status(422).json({ error: 'Claude returned non-JSON', raw: rawText })
+    }
+
+    // Claude classified this as not a job email — skip silently
+    if (parsed.is_job_email === false) {
+      return res.status(200).json({ ok: false, skipped: true, reason: 'not a job application email' })
     }
 
     // Fall back to sender domain if company not found
@@ -125,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!parsed.job_title) {
-      return res.status(422).json({ error: 'Could not extract job_title', parsed })
+      return res.status(200).json({ ok: false, skipped: true, reason: 'not a job application email' })
     }
 
     const status: ApplicationStatus = VALID_STATUSES.includes(parsed.status)
