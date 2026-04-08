@@ -2,11 +2,14 @@ import { useState } from 'react'
 import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
 import AuthPage from './components/auth/AuthPage'
+import Modal from './components/modal/Modal'
+import EmailTrackingSetup from './components/settings/EmailTrackingSetup'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useAuth } from './hooks/useAuth'
 
 export default function App() {
   const [openAdd, setOpenAdd] = useState(false)
+  const [emailSetupOpen, setEmailSetupOpen] = useState(false)
   const { dark, toggle: toggleDark } = useDarkMode()
   const { session, loading, signIn, signUp, signOut } = useAuth()
 
@@ -30,8 +33,13 @@ export default function App() {
         isDark={dark}
         userEmail={session.user.email}
         onSignOut={signOut}
+        onOpenEmailSetup={() => setEmailSetupOpen(true)}
       />
       <Dashboard externalAddOpen={openAdd} onExternalAddClose={() => setOpenAdd(false)} />
+
+      <Modal isOpen={emailSetupOpen} onClose={() => setEmailSetupOpen(false)} title="Email Tracking Setup">
+        <EmailTrackingSetup />
+      </Modal>
     </div>
   )
 }

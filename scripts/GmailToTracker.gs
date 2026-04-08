@@ -1,16 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Job Tracker — Gmail Automation
+//  Get your personal pre-filled script from the app:
+//  Click the email icon (✉) in the header → copy the script from there.
+//
+//  Manual setup (if needed):
 //  1. Go to https://script.google.com → New project
-//  2. Paste this file, fill in CONFIG
+//  2. Paste this file, fill in WEBHOOK_TOKEN from the app's Email Setup modal
 //  3. Run markExistingEmailsAsProcessed() ONCE manually
 //  4. Set trigger: runEvery15Minutes → Time-driven → Every 15 minutes
 // ═══════════════════════════════════════════════════════════════════
 
 // ── Configuration ────────────────────────────────────────────────────────
 var CONFIG = {
-  WEBHOOK_URL:      'https://job-tracker-seven-weld.vercel.app/api/ingest-email',
-  WEBHOOK_SECRET:   'PASTE_YOUR_SECRET_HERE',   // from EMAIL_WEBHOOK_SECRET env var
-  SUPABASE_USER_ID: 'PASTE_YOUR_USER_UUID_HERE', // Supabase → Auth → Users → User UID
+  WEBHOOK_URL:   'https://job-tracker-seven-weld.vercel.app/api/ingest-email',
+  WEBHOOK_TOKEN: 'PASTE_YOUR_PERSONAL_TOKEN_HERE', // copy from the app → email icon → Email Tracking Setup
 };
 
 // ── Gmail search query ────────────────────────────────────────────────────
@@ -45,21 +48,19 @@ function runEvery15Minutes() {
 
   threads.forEach(function(thread) {
     var messages = thread.getMessages();
-    var msg = messages[messages.length - 1]; // latest message in thread
-
-    var payload = JSON.stringify({
-      user_id: CONFIG.SUPABASE_USER_ID,
-      subject: msg.getSubject(),
-      from:    msg.getFrom(),
-      body:    msg.getPlainBody().substring(0, 8000),
-      date:    msg.getDate().toISOString(),
-    });
+    var msg = messages[messages.length - 1];
 
     var options = {
       method:            'post',
       contentType:       'application/json',
-      headers:           { 'x-webhook-secret': CONFIG.WEBHOOK_SECRET },
-      payload:           payload,
+      headers:           {},
+      payload:           JSON.stringify({
+        token:   CONFIG.WEBHOOK_TOKEN,
+        subject: msg.getSubject(),
+        from:    msg.getFrom(),
+        body:    msg.getPlainBody().substring(0, 8000),
+        date:    msg.getDate().toISOString(),
+      }),
       muteHttpExceptions: true,
     };
 
@@ -80,13 +81,11 @@ function runEvery15Minutes() {
       thread.addLabel(errorLabel);
     }
 
-    Utilities.sleep(500); // avoid Gmail API rate limits
+    Utilities.sleep(500);
   });
 }
 
 // ── One-time bootstrap ────────────────────────────────────────────────────
-// Run this ONCE manually before activating the trigger.
-// It labels all existing matching emails so they won't be reprocessed.
 function markExistingEmailsAsProcessed() {
   var processedLabel  = getOrCreateLabel('job-tracker-processed');
   var bootstrapQuery  = SEARCH_QUERY.replace('-label:job-tracker-processed', '');

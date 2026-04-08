@@ -19,14 +19,12 @@ interface ParsedApplication {
 }
 
 interface IngestPayload {
-  user_id: string
+  token: string
   subject: string
   from: string
   body: string
   date: string
 }
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const VALID_STATUSES: ApplicationStatus[] = [
   'Saved', 'Applied', 'Phone Screen', 'Interview Scheduled',
@@ -79,20 +77,23 @@ ${p.body.slice(0, 6000)}
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  // Auth
-  const secret = process.env.EMAIL_WEBHOOK_SECRET
-  if (!secret || req.headers['x-webhook-secret'] !== secret) {
-    return res.status(401).json({ error: 'Unauthorized' })
+  const payload = req.body as Partial<IngestPayload>
+  if (!payload.token || !payload.subject || !payload.body) {
+    return res.status(400).json({ error: 'Missing required fields: token, subject, body' })
   }
 
-  // Validate payload
-  const payload = req.body as Partial<IngestPayload>
-  if (!payload.user_id || !payload.subject || !payload.body) {
-    return res.status(400).json({ error: 'Missing required fields: user_id, subject, body' })
-  }
-  if (!UUID_RE.test(payload.user_id)) {
-    return res.status(400).json({ error: 'Invalid user_id format' })
-  }
+  const adminClient = createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'))
+
+  // Look up user by their personal token
+  const { data: tokenRow } = await adminClient
+    .from('user_webhook_tokens')
+    .select('user_id')
+    .eq('token', payload.token)
+    .single()
+
+  if (!tokenRow) return res.status(401).json({ error: 'Invalid token' })
+
+  const userId = tokenRow.user_id
 
   try {
     // 1. Parse email with Claude
@@ -121,16 +122,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(422).json({ error: 'Could not extract company or job_title', parsed })
     }
 
-    // Ensure status is valid
     const status: ApplicationStatus = VALID_STATUSES.includes(parsed.status)
       ? parsed.status
       : 'Saved'
 
-    // 2. Insert into Supabase (service-role bypasses RLS)
-    const supabase = createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'))
-
-    const { error: insertError } = await supabase.from('job_applications').insert({
-      user_id: payload.user_id,
+    // 2. Insert into Supabase
+    const { error: insertError } = await adminClient.from('job_applications').insert({
+      user_id: userId,
       company: parsed.company,
       job_title: parsed.job_title,
       location: parsed.location ?? null,

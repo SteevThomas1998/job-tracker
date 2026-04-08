@@ -4,9 +4,10 @@ interface Props {
   isDark: boolean
   userEmail?: string
   onSignOut: () => void
+  onOpenEmailSetup: () => void
 }
 
-export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignOut }: Props) {
+export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignOut, onOpenEmailSetup }: Props) {
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 dark:bg-gray-900/95 dark:border-gray-800 sticky top-0 z-30 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -38,6 +39,17 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
               {userEmail}
             </span>
           )}
+
+          {/* Email tracking setup */}
+          <button
+            onClick={onOpenEmailSetup}
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            title="Email tracking setup"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </button>
 
           <button
             onClick={onSignOut}
