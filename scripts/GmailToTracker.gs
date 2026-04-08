@@ -33,7 +33,10 @@ var SEARCH_QUERY = [
   ')',
   '-subject:(visa OR "police certificate" OR "financial aid" OR passport OR',
   '          "police verification" OR coursera OR revolut OR ubisoft OR',
-  '          "credit card" OR "bank account" OR insurance)',
+  '          "credit card" OR "bank account" OR insurance OR',
+  '          newsletter OR digest OR "jobs you may like" OR "jobs based on" OR',
+  '          "recommended jobs" OR "top jobs for you" OR "your weekly" OR',
+  '          "people also viewed" OR "suggested jobs" OR "jobs near you")',
   '-label:job-tracker-processed',
   'newer_than:7d',
 ].join(' ');

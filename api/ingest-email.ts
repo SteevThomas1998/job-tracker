@@ -119,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const anthropic = new Anthropic({ apiKey: requireEnv('ANTHROPIC_API_KEY') })
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
+      max_tokens: 1024,
       messages: [{ role: 'user', content: buildPrompt(payload as IngestPayload) }],
     })
 
