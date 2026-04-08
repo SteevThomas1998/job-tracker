@@ -118,8 +118,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(422).json({ error: 'Claude returned non-JSON', raw: rawText })
     }
 
-    if (!parsed.company || !parsed.job_title) {
-      return res.status(422).json({ error: 'Could not extract company or job_title', parsed })
+    // Fall back to sender domain if company not found
+    if (!parsed.company) {
+      const match = (payload as IngestPayload).from.match(/@([\w.-]+)/)
+      parsed.company = match ? match[1].replace(/\.(com|org|net|io|co)$/, '') : 'Unknown Company'
+    }
+
+    if (!parsed.job_title) {
+      return res.status(422).json({ error: 'Could not extract job_title', parsed })
     }
 
     const status: ApplicationStatus = VALID_STATUSES.includes(parsed.status)
