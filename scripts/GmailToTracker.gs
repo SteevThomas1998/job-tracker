@@ -95,3 +95,62 @@ function markExistingEmailsAsProcessed() {
   threads.forEach(function(thread) { thread.addLabel(processedLabel); });
   Logger.log('Done. Only new emails will be processed going forward.');
 }
+
+// ── One-time bulk import of old emails (up to 1 year) ─────────────────────
+// Run this manually, multiple times if needed, until it reports 0 threads found.
+// Already-processed emails are skipped automatically via the label.
+function importOldEmails() {
+  var processedLabel = getOrCreateLabel('job-tracker-processed');
+  var errorLabel     = getOrCreateLabel('job-tracker-error');
+
+  var oldQuery = SEARCH_QUERY
+    .replace('-label:job-tracker-processed', '')
+    .replace('newer_than:7d', 'newer_than:365d')
+    + ' -label:job-tracker-processed';
+
+  var threads = GmailApp.search(oldQuery, 0, 50);
+  Logger.log('Found ' + threads.length + ' unprocessed thread(s) to import.');
+
+  if (threads.length === 0) {
+    Logger.log('All done! No more old emails to import.');
+    return;
+  }
+
+  threads.forEach(function(thread) {
+    var messages = thread.getMessages();
+    var msg = messages[messages.length - 1];
+
+    var options = {
+      method:             'post',
+      contentType:        'application/json',
+      headers:            {},
+      payload:            JSON.stringify({
+        token:   CONFIG.WEBHOOK_TOKEN,
+        subject: msg.getSubject(),
+        from:    msg.getFrom(),
+        body:    msg.getPlainBody().substring(0, 8000),
+        date:    msg.getDate().toISOString(),
+      }),
+      muteHttpExceptions: true,
+    };
+
+    try {
+      var response = UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
+      var code = response.getResponseCode();
+      if (code === 200) {
+        Logger.log('OK: ' + msg.getSubject());
+        thread.addLabel(processedLabel);
+        thread.removeLabel(errorLabel);
+      } else {
+        Logger.log('ERROR ' + code + ': ' + msg.getSubject() + ' → ' + response.getContentText());
+        thread.addLabel(errorLabel);
+      }
+    } catch (e) {
+      Logger.log('EXCEPTION: ' + msg.getSubject() + ' → ' + e.toString());
+      thread.addLabel(errorLabel);
+    }
+    Utilities.sleep(500);
+  });
+
+  Logger.log('Batch done. Run importOldEmails() again if more remain.');
+}
