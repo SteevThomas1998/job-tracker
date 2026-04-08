@@ -20,6 +20,7 @@ interface ParsedApplication {
 
 interface IngestPayload {
   token: string
+  message_id: string
   subject: string
   from: string
   body: string
@@ -48,30 +49,32 @@ Date: ${p.date}
 ${p.body.slice(0, 6000)}
 ---
 
-## Step 1: Is this a job application email?
-A job application email is ONLY one of these:
-- Confirmation that the sender applied for a job/position/role
-- Recruiter or hiring manager reaching out about a job opportunity
-- Interview invitation or scheduling for a job
-- Technical assessment or coding challenge for a job
-- Job offer or salary negotiation
-- Rejection from a job application
+## Step 1: Is this a direct, personal job application email?
+Only classify as a job email if it is DIRECTLY addressed to this specific person about a specific role:
+- Confirmation that THIS person applied for a specific job/position/role
+- A recruiter or hiring manager personally reaching out to THIS person about a specific opportunity
+- Interview invitation for THIS person for a specific job
+- Technical assessment or coding challenge sent to THIS person
+- Job offer letter for THIS person
+- Rejection email for THIS person's specific application
 
-NOT a job application email:
-- Visa applications, immigration, passport, police certificates
+Classify as NOT a job email if:
+- It is a mass/broadcast email (e.g. "We're hiring graduates", LinkedIn announcements, "Career For Freshers")
+- It is a newsletter, digest, or job recommendations list
+- It mentions multiple unrelated job titles in the same email (mass recruiter blast)
+- Visa, immigration, passport, police certificates
 - Financial aid, scholarships, course applications (e.g. Coursera)
 - Bank accounts, credit cards, insurance, financial products
 - Gaming, shopping, subscriptions, promotions
-- Any "application" that is not for employment
 
 ## Step 2: Return JSON
 If NOT a job email, return exactly: {"is_job_email": false}
 
-If IS a job email, return:
+If IS a direct personal job email, return:
 {
   "is_job_email": true,
   "company": "<hiring company name, required>",
-  "job_title": "<job title or role, required>",
+  "job_title": "<specific job title, required>",
   "location": "<city/state/Remote or null>",
   "job_url": "<URL from email or null>",
   "status": "<one of: Saved | Applied | Phone Screen | Interview Scheduled | Technical Assessment | Offer Received | Rejected | Withdrawn>",
@@ -83,7 +86,7 @@ If IS a job email, return:
 
 ## Status rules
 - Application confirmation → "Applied"
-- Recruiter outreach, no interview scheduled → "Phone Screen"
+- Direct recruiter outreach for a specific role, no interview yet → "Phone Screen"
 - Interview invitation → "Interview Scheduled"
 - Take-home test / coding challenge → "Technical Assessment"
 - Offer letter or verbal offer → "Offer Received"
@@ -113,6 +116,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!tokenRow) return res.status(401).json({ error: 'Invalid token' })
 
   const userId = tokenRow.user_id
+
+  // Deduplication: skip if this Gmail message was already processed
+  if (payload.message_id) {
+    const { data: existing } = await adminClient
+      .from('job_applications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('gmail_message_id', payload.message_id)
+      .single()
+
+    if (existing) {
+      return res.status(200).json({ ok: false, skipped: true, reason: 'already processed' })
+    }
+  }
 
   try {
     // 1. Parse email with Claude
@@ -159,6 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Insert into Supabase
     const { error: insertError } = await adminClient.from('job_applications').insert({
       user_id: userId,
+      gmail_message_id: payload.message_id ?? null,
       company: parsed.company,
       job_title: parsed.job_title,
       location: parsed.location ?? null,

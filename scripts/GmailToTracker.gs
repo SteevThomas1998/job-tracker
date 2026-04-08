@@ -63,11 +63,12 @@ function runEvery15Minutes() {
       contentType:       'application/json',
       headers:           {},
       payload:           JSON.stringify({
-        token:   CONFIG.WEBHOOK_TOKEN,
-        subject: msg.getSubject(),
-        from:    msg.getFrom(),
-        body:    msg.getPlainBody().substring(0, 8000),
-        date:    msg.getDate().toISOString(),
+        token:      CONFIG.WEBHOOK_TOKEN,
+        message_id: msg.getId(),
+        subject:    msg.getSubject(),
+        from:       msg.getFrom(),
+        body:       msg.getPlainBody().substring(0, 8000),
+        date:       msg.getDate().toISOString(),
       }),
       muteHttpExceptions: true,
     };
