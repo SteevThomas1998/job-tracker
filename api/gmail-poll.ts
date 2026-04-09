@@ -76,7 +76,8 @@ function getHeader(msg: GmailMessage, name: string): string {
   return msg.payload.headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
 }
 
-async function getMessageIds(accessToken: string, historyId: string | null): Promise<{ ids: string[]; newHistoryId: string | null }> {
+async function getMessageIds(accessToken: string, historyId: string | null, backfill = false): Promise<{ ids: string[]; newHistoryId: string | null }> {
+  if (backfill) return searchMessages(accessToken, '365d')
   // Incremental via History API
   if (historyId) {
     const res = await fetch(
@@ -98,12 +99,16 @@ async function getMessageIds(accessToken: string, historyId: string | null): Pro
     }
   }
 
-  // Fallback: search last 7 days
+  // Fallback: search last 7 days (or 365 days for backfill)
+  return searchMessages(accessToken, backfill ? '365d' : '7d')
+}
+
+async function searchMessages(accessToken: string, period: string): Promise<{ ids: string[]; newHistoryId: null }> {
   const q = encodeURIComponent(
-    '(subject:("thank you for applying" OR "your application" OR "job application" OR "application received" OR "application submitted" OR "application success" OR "application update" OR "interview" OR "job offer" OR "offer letter" OR "indeed application" OR "thank you for your application" OR "right fit for" OR "we have reviewed your application") OR from:(greenhouse.io OR lever.co OR ashbyhq.com OR workday.com OR jobvite.com OR indeed.com OR linkedin.com OR seemehired.com OR occupop.com OR cezannehr.com OR rezoomo.com)) newer_than:7d',
+    `(subject:("thank you for applying" OR "your application" OR "job application" OR "application received" OR "application submitted" OR "application success" OR "application update" OR "interview" OR "job offer" OR "offer letter" OR "indeed application" OR "thank you for your application" OR "right fit for" OR "we have reviewed your application") OR from:(greenhouse.io OR lever.co OR ashbyhq.com OR workday.com OR jobvite.com OR indeed.com OR linkedin.com OR seemehired.com OR occupop.com OR cezannehr.com OR rezoomo.com)) newer_than:${period}`,
   )
   const res = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=50`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=100`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
   )
   if (!res.ok) return { ids: [], newHistoryId: null }
@@ -114,6 +119,7 @@ async function getMessageIds(accessToken: string, historyId: string | null): Pro
 async function pollForUser(
   userId: string,
   admin: ReturnType<typeof createClient>,
+  backfill = false,
 ): Promise<{ processed: number; inserted: number }> {
   const { data: conn } = await admin
     .from('gmail_connections').select('*').eq('user_id', userId).single()
@@ -123,7 +129,7 @@ async function pollForUser(
     .from('gmail_poll_state').select('last_history_id').eq('user_id', userId).single()
 
   const accessToken = await getValidToken(conn as GmailConnection, admin)
-  const { ids: messageIds, newHistoryId } = await getMessageIds(accessToken, pollState?.last_history_id ?? null)
+  const { ids: messageIds, newHistoryId } = await getMessageIds(accessToken, pollState?.last_history_id ?? null, backfill)
 
   // Update historyId watermark
   const currentHistoryId = newHistoryId ?? await (async () => {
@@ -231,11 +237,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  const backfill = req.query.backfill === 'true' || req.body?.backfill === true
   const results: Record<string, { processed: number; inserted: number; error?: string }> = {}
 
   for (const userId of userIds) {
     try {
-      results[userId] = await pollForUser(userId, admin)
+      results[userId] = await pollForUser(userId, admin, backfill)
     } catch (e) {
       console.error(`Poll error for ${userId}:`, e)
       results[userId] = { processed: 0, inserted: 0, error: String(e) }

@@ -11,6 +11,7 @@ export function useGmailConnection() {
   const [status, setStatus] = useState<GmailStatus>({ connected: false, email: null, connectedAt: null })
   const [loading, setLoading] = useState(true)
   const [polling, setPolling] = useState(false)
+  const [backfilling, setBackfilling] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
   const pollingRef = useRef(false)
 
@@ -48,6 +49,21 @@ export function useGmailConnection() {
     }
   }, [])
 
+  async function importPastEmails() {
+    if (backfilling) return
+    const auth = await getAuthHeader()
+    if (!auth) return
+    setBackfilling(true)
+    try {
+      await fetch('/api/gmail-poll?backfill=true', {
+        method: 'POST',
+        headers: { Authorization: auth },
+      })
+    } finally {
+      setBackfilling(false)
+    }
+  }
+
   async function connect() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
@@ -77,5 +93,5 @@ export function useGmailConnection() {
     fetchStatus()
   }, [fetchStatus])
 
-  return { status, loading, polling, disconnecting, connect, disconnect, triggerPoll }
+  return { status, loading, polling, backfilling, disconnecting, connect, disconnect, triggerPoll, importPastEmails }
 }

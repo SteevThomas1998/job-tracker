@@ -3,14 +3,14 @@ import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
 import AuthPage from './components/auth/AuthPage'
 import Modal from './components/modal/Modal'
-import GmailConnect from './components/settings/EmailTrackingSetup'
+import GmailManage from './components/settings/EmailTrackingSetup'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useAuth } from './hooks/useAuth'
 import { useGmailConnection } from './hooks/useGmailConnection'
 
 export default function App() {
   const [openAdd, setOpenAdd] = useState(false)
-  const [emailSetupOpen, setEmailSetupOpen] = useState(false)
+  const [gmailModalOpen, setGmailModalOpen] = useState(false)
   const { dark, toggle: toggleDark } = useDarkMode()
   const { session, loading, signIn, signUp, signOut } = useAuth()
   const gmail = useGmailConnection()
@@ -27,6 +27,14 @@ export default function App() {
     return <AuthPage onSignIn={signIn} onSignUp={signUp} />
   }
 
+  function handleGmailClick() {
+    if (gmail.status.connected) {
+      setGmailModalOpen(true)  // already connected → show manage options
+    } else {
+      gmail.connect()           // not connected → go straight to OAuth
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Header
@@ -35,7 +43,8 @@ export default function App() {
         isDark={dark}
         userEmail={session.user.email}
         onSignOut={signOut}
-        onOpenEmailSetup={() => setEmailSetupOpen(true)}
+        gmailConnected={gmail.status.connected}
+        onGmailClick={handleGmailClick}
       />
       <Dashboard
         externalAddOpen={openAdd}
@@ -43,14 +52,13 @@ export default function App() {
         onMounted={gmail.triggerPoll}
       />
 
-      <Modal isOpen={emailSetupOpen} onClose={() => setEmailSetupOpen(false)} title="Email Tracking">
-        <GmailConnect
+      <Modal isOpen={gmailModalOpen} onClose={() => setGmailModalOpen(false)} title="Gmail Tracking">
+        <GmailManage
           status={gmail.status}
-          loading={gmail.loading}
-          polling={gmail.polling}
+          backfilling={gmail.backfilling}
           disconnecting={gmail.disconnecting}
-          onConnect={gmail.connect}
-          onDisconnect={gmail.disconnect}
+          onDisconnect={() => { gmail.disconnect(); setGmailModalOpen(false) }}
+          onImportPast={gmail.importPastEmails}
         />
       </Modal>
     </div>
