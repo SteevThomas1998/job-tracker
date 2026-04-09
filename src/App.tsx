@@ -56,6 +56,7 @@ export default function App() {
         <GmailManage
           status={gmail.status}
           backfilling={gmail.backfilling}
+          importResult={gmail.importResult}
           disconnecting={gmail.disconnecting}
           onDisconnect={() => { gmail.disconnect(); setGmailModalOpen(false) }}
           onImportPast={gmail.importPastEmails}

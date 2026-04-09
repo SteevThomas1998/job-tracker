@@ -103,12 +103,12 @@ async function getMessageIds(accessToken: string, historyId: string | null, back
   return searchMessages(accessToken, backfill ? '365d' : '7d')
 }
 
-async function searchMessages(accessToken: string, period: string): Promise<{ ids: string[]; newHistoryId: null }> {
+async function searchMessages(accessToken: string, period: string, maxResults = 20): Promise<{ ids: string[]; newHistoryId: null }> {
   const q = encodeURIComponent(
     `(subject:("thank you for applying" OR "your application" OR "job application" OR "application received" OR "application submitted" OR "application success" OR "application update" OR "interview" OR "job offer" OR "offer letter" OR "indeed application" OR "thank you for your application" OR "right fit for" OR "we have reviewed your application") OR from:(greenhouse.io OR lever.co OR ashbyhq.com OR workday.com OR jobvite.com OR indeed.com OR linkedin.com OR seemehired.com OR occupop.com OR cezannehr.com OR rezoomo.com)) newer_than:${period}`,
   )
   const res = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=100`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=${maxResults}`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
   )
   if (!res.ok) return { ids: [], newHistoryId: null }

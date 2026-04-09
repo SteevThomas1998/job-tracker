@@ -1,12 +1,13 @@
 interface Props {
   status: { connected: boolean; email: string | null }
   backfilling: boolean
+  importResult: { inserted: number } | null
   disconnecting: boolean
   onDisconnect: () => void
   onImportPast: () => void
 }
 
-export default function GmailManage({ status, backfilling, disconnecting, onDisconnect, onImportPast }: Props) {
+export default function GmailManage({ status, backfilling, importResult, disconnecting, onDisconnect, onImportPast }: Props) {
   return (
     <div className="space-y-5">
       {/* Connected card */}
@@ -70,7 +71,13 @@ export default function GmailManage({ status, backfilling, disconnecting, onDisc
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
             {backfilling ? 'Importing past emails…' : 'Import past emails'}
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Scans your last 12 months of email</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            {importResult != null
+              ? importResult.inserted === 0
+                ? 'No new applications found — click again to scan next batch'
+                : `Added ${importResult.inserted} application${importResult.inserted !== 1 ? 's' : ''} — click again for more`
+              : 'Scans your last 12 months in batches of 20'}
+          </p>
         </div>
         {!backfilling && (
           <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

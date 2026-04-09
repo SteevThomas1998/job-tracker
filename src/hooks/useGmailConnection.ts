@@ -12,6 +12,7 @@ export function useGmailConnection() {
   const [loading, setLoading] = useState(true)
   const [polling, setPolling] = useState(false)
   const [backfilling, setBackfilling] = useState(false)
+  const [importResult, setImportResult] = useState<{ inserted: number } | null>(null)
   const [disconnecting, setDisconnecting] = useState(false)
   const pollingRef = useRef(false)
 
@@ -54,11 +55,19 @@ export function useGmailConnection() {
     const auth = await getAuthHeader()
     if (!auth) return
     setBackfilling(true)
+    setImportResult(null)
     try {
-      await fetch('/api/gmail-poll?backfill=true', {
+      const res = await fetch('/api/gmail-poll?backfill=true', {
         method: 'POST',
         headers: { Authorization: auth },
       })
+      if (res.ok) {
+        const data = await res.json()
+        const total = Object.values(data.results ?? {}).reduce(
+          (sum: number, r: unknown) => sum + ((r as { inserted: number }).inserted ?? 0), 0
+        )
+        setImportResult({ inserted: total as number })
+      }
     } finally {
       setBackfilling(false)
     }
@@ -93,5 +102,5 @@ export function useGmailConnection() {
     fetchStatus()
   }, [fetchStatus])
 
-  return { status, loading, polling, backfilling, disconnecting, connect, disconnect, triggerPoll, importPastEmails }
+  return { status, loading, polling, backfilling, importResult, disconnecting, connect, disconnect, triggerPoll, importPastEmails }
 }
