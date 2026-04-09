@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import { parseEmail, callGPTFallback, companyFromDomain, NOISE_RE, ATS_DOMAINS, JOB_SUBJECT_RE } from './lib/parseEmail'
+import { parseEmail, callGPTFallback, companyFromDomain, NOISE_RE, ATS_DOMAINS, JOB_SUBJECT_RE } from './lib/parseEmail.js'
 
 // Gmail API types
 interface GmailMessage {

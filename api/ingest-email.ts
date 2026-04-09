@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
-import { parseEmail, callGPTFallback, companyFromDomain } from './lib/parseEmail'
+import { parseEmail, callGPTFallback, companyFromDomain } from './lib/parseEmail.js'
 
 function requireEnv(name: string): string {
   const val = process.env[name]
