@@ -3,15 +3,17 @@ import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
 import AuthPage from './components/auth/AuthPage'
 import Modal from './components/modal/Modal'
-import EmailTrackingSetup from './components/settings/EmailTrackingSetup'
+import GmailConnect from './components/settings/EmailTrackingSetup'
 import { useDarkMode } from './hooks/useDarkMode'
 import { useAuth } from './hooks/useAuth'
+import { useGmailConnection } from './hooks/useGmailConnection'
 
 export default function App() {
   const [openAdd, setOpenAdd] = useState(false)
   const [emailSetupOpen, setEmailSetupOpen] = useState(false)
   const { dark, toggle: toggleDark } = useDarkMode()
   const { session, loading, signIn, signUp, signOut } = useAuth()
+  const gmail = useGmailConnection()
 
   if (loading) {
     return (
@@ -35,10 +37,21 @@ export default function App() {
         onSignOut={signOut}
         onOpenEmailSetup={() => setEmailSetupOpen(true)}
       />
-      <Dashboard externalAddOpen={openAdd} onExternalAddClose={() => setOpenAdd(false)} />
+      <Dashboard
+        externalAddOpen={openAdd}
+        onExternalAddClose={() => setOpenAdd(false)}
+        onMounted={gmail.triggerPoll}
+      />
 
-      <Modal isOpen={emailSetupOpen} onClose={() => setEmailSetupOpen(false)} title="Email Tracking Setup">
-        <EmailTrackingSetup />
+      <Modal isOpen={emailSetupOpen} onClose={() => setEmailSetupOpen(false)} title="Email Tracking">
+        <GmailConnect
+          status={gmail.status}
+          loading={gmail.loading}
+          polling={gmail.polling}
+          disconnecting={gmail.disconnecting}
+          onConnect={gmail.connect}
+          onDisconnect={gmail.disconnect}
+        />
       </Modal>
     </div>
   )

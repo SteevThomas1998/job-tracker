@@ -1,284 +1,88 @@
-import { useState } from 'react'
-import { useWebhookToken } from '../../hooks/useWebhookToken'
-
-const WEBHOOK_URL = 'https://job-tracker-seven-weld.vercel.app/api/ingest-email'
-
-function buildScript(token: string): string {
-  return `// ═══════════════════════════════════════════════════════════════════
-//  Stealeen — Gmail Automation
-//  1. Go to https://script.google.com → New project
-//  2. Paste this entire script (replace any existing code)
-//  3. Run markExistingEmailsAsProcessed() ONCE manually
-//  4. Set trigger: runEvery15Minutes → Time-driven → Every 15 minutes
-// ═══════════════════════════════════════════════════════════════════
-
-var CONFIG = {
-  WEBHOOK_URL:   '${WEBHOOK_URL}',
-  WEBHOOK_TOKEN: '${token}',
-};
-
-var SEARCH_QUERY = [
-  '(',
-  '  subject:("thank you for applying" OR "your application" OR "job application" OR',
-  '           "application received" OR "application submitted" OR "application success" OR',
-  '           "application update" OR "applied for" OR',
-  '           "interview" OR "job offer" OR "offer letter" OR "we reviewed your" OR',
-  '           "next steps" OR "moving forward with your" OR "not moving forward" OR',
-  '           "regret to inform" OR "unfortunately" OR "position has been filled" OR',
-  '           "indeed application" OR "linkedin application")',
-  '  OR',
-  '  from:(greenhouse.io OR lever.co OR jobvite.com OR workday.com OR',
-  '         myworkdayjobs.com OR icims.com OR taleo.net OR brassring.com OR',
-  '         smartrecruiters.com OR ashbyhq.com OR rippling.com OR bamboohr.com OR',
-  '         jazz.co OR recruitee.com OR pinpointhq.com OR indeed.com OR linkedin.com OR',
-  '         seemehired.com OR occupop.com OR occupop-mail.com OR cezannehr.com OR',
-  '         rezoomo.com OR sigmar.ie OR irishjobs.ie OR totaljobs.com OR reed.co.uk)',
-  '  OR',
-  '  ("thank you for your application" OR "thank you for your recent application" OR',
-  '   "right fit for" OR "not progressing with your application" OR',
-  '   "your application has been" OR "we have reviewed your application")',
-  ')',
-  '-subject:(visa OR "police certificate" OR "financial aid" OR passport OR',
-  '          "police verification" OR coursera OR revolut OR ubisoft OR',
-  '          "credit card" OR "bank account" OR insurance OR',
-  '          newsletter OR digest OR "jobs you may like" OR "jobs based on" OR',
-  '          "recommended jobs" OR "top jobs for you" OR "your weekly" OR',
-  '          "people also viewed" OR "suggested jobs" OR "jobs near you")',
-  '-label:job-tracker-processed',
-  'newer_than:7d',
-].join(' ');
-
-function getOrCreateLabel(name) {
-  return GmailApp.getUserLabelByName(name) || GmailApp.createLabel(name);
+interface Props {
+  status: { connected: boolean; email: string | null; connectedAt: string | null }
+  loading: boolean
+  polling: boolean
+  disconnecting: boolean
+  onConnect: () => void
+  onDisconnect: () => void
 }
 
-function runEvery15Minutes() {
-  var processedLabel = getOrCreateLabel('job-tracker-processed');
-  var errorLabel     = getOrCreateLabel('job-tracker-error');
-  var threads = GmailApp.search(SEARCH_QUERY, 0, 50);
-  Logger.log('Found ' + threads.length + ' thread(s) to process.');
-
-  threads.forEach(function(thread) {
-    var messages = thread.getMessages();
-    var msg = messages[messages.length - 1];
-
-    var options = {
-      method:             'post',
-      contentType:        'application/json',
-      headers:            {},
-      payload:            JSON.stringify({
-        token:      CONFIG.WEBHOOK_TOKEN,
-        message_id: msg.getId(),
-        subject:    msg.getSubject(),
-        from:       msg.getFrom(),
-        body:       msg.getPlainBody().substring(0, 8000),
-        date:       msg.getDate().toISOString(),
-      }),
-      muteHttpExceptions: true,
-    };
-
-    try {
-      var response = UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
-      var code = response.getResponseCode();
-      if (code === 200) {
-        Logger.log('OK: ' + msg.getSubject());
-        thread.addLabel(processedLabel);
-        thread.removeLabel(errorLabel);
-      } else {
-        Logger.log('ERROR ' + code + ': ' + msg.getSubject() + ' → ' + response.getContentText());
-        thread.addLabel(errorLabel);
-      }
-    } catch (e) {
-      Logger.log('EXCEPTION: ' + msg.getSubject() + ' → ' + e.toString());
-      thread.addLabel(errorLabel);
-    }
-    Utilities.sleep(500);
-  });
-}
-
-function markExistingEmailsAsProcessed() {
-  var processedLabel = getOrCreateLabel('job-tracker-processed');
-  var bootstrapQuery = SEARCH_QUERY.replace('-label:job-tracker-processed', '');
-  var threads = GmailApp.search(bootstrapQuery, 0, 500);
-  Logger.log('Marking ' + threads.length + ' existing thread(s) as processed...');
-  threads.forEach(function(thread) { thread.addLabel(processedLabel); });
-  Logger.log('Done. Only new emails will be processed going forward.');
-}
-
-// ── One-time bulk import of old emails (up to 1 year) ─────────────────────
-// Run this manually, multiple times if needed, until it reports 0 threads found.
-// Already-processed emails are skipped automatically via the label.
-function importOldEmails() {
-  var processedLabel = getOrCreateLabel('job-tracker-processed');
-  var errorLabel     = getOrCreateLabel('job-tracker-error');
-
-  var oldQuery = SEARCH_QUERY
-    .replace('-label:job-tracker-processed', '')
-    .replace('newer_than:7d', 'newer_than:365d')
-    + ' -label:job-tracker-processed';
-
-  var threads = GmailApp.search(oldQuery, 0, 50);
-  Logger.log('Found ' + threads.length + ' unprocessed thread(s) to import.');
-
-  if (threads.length === 0) {
-    Logger.log('All done! No more old emails to import.');
-    return;
+export default function GmailConnect({ status, loading, polling, disconnecting, onConnect, onDisconnect }: Props) {
+  if (loading) {
+    return (
+      <div className="h-32 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
-  threads.forEach(function(thread) {
-    var messages = thread.getMessages();
-    var msg = messages[messages.length - 1];
+  if (status.connected) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-xl p-4">
+          <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-green-900 dark:text-green-300">Gmail connected</p>
+            {status.email && (
+              <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">{status.email}</p>
+            )}
+          </div>
+          {polling && (
+            <div className="ml-auto w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          )}
+        </div>
 
-    var options = {
-      method:             'post',
-      contentType:        'application/json',
-      headers:            {},
-      payload:            JSON.stringify({
-        token:      CONFIG.WEBHOOK_TOKEN,
-        message_id: msg.getId(),
-        subject:    msg.getSubject(),
-        from:       msg.getFrom(),
-        body:       msg.getPlainBody().substring(0, 8000),
-        date:       msg.getDate().toISOString(),
-      }),
-      muteHttpExceptions: true,
-    };
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Job emails are checked automatically when you open the dashboard. New applications appear instantly.
+        </p>
 
-    try {
-      var response = UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
-      var code = response.getResponseCode();
-      if (code === 200) {
-        Logger.log('OK: ' + msg.getSubject());
-        thread.addLabel(processedLabel);
-        thread.removeLabel(errorLabel);
-      } else {
-        Logger.log('ERROR ' + code + ': ' + msg.getSubject() + ' → ' + response.getContentText());
-        thread.addLabel(errorLabel);
-      }
-    } catch (e) {
-      Logger.log('EXCEPTION: ' + msg.getSubject() + ' → ' + e.toString());
-      thread.addLabel(errorLabel);
-    }
-    Utilities.sleep(500);
-  });
-
-  Logger.log('Batch done. Run importOldEmails() again if more remain.');
-}`
-}
-
-export default function EmailTrackingSetup() {
-  const { token, loading, regenerating, regenerate } = useWebhookToken()
-  const [copied, setCopied] = useState(false)
-  const [confirmRegen, setConfirmRegen] = useState(false)
-
-  async function handleCopy() {
-    if (!token) return
-    await navigator.clipboard.writeText(buildScript(token))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  async function handleRegenerate() {
-    setConfirmRegen(false)
-    await regenerate()
+        <button
+          onClick={onDisconnect}
+          disabled={disconnecting}
+          className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+        >
+          {disconnecting ? 'Disconnecting…' : 'Disconnect Gmail'}
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* How it works */}
+    <div className="space-y-5">
       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1">How it works</h3>
+        <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1">Automatic email tracking</h3>
         <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
-          A Google Apps Script runs in your Gmail account every 15 minutes, detects job-related emails, and automatically adds them to your tracker. Your personal token below is pre-filled — just copy and paste.
+          Connect your Gmail account once and job-related emails are tracked automatically — no scripts, no manual setup.
         </p>
       </div>
 
-      {/* Setup steps */}
-      <ol className="space-y-3">
+      <ol className="space-y-2">
         {[
-          { n: 1, text: 'Copy the Apps Script below' },
-          { n: 2, text: 'Go to script.google.com → New project → paste the code' },
-          { n: 3, text: 'Run markExistingEmailsAsProcessed() once (prevents duplicate entries)' },
-          { n: 4, text: 'Set a trigger: runEvery15Minutes → Time-driven → Every 15 minutes' },
-        ].map(({ n, text }) => (
-          <li key={n} className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center">{n}</span>
-            <span className="text-sm text-gray-700 dark:text-gray-300 pt-0.5">{text}</span>
+          'Click "Connect Gmail" below',
+          'Sign in with your Google account',
+          'Click Allow',
+        ].map((step, i) => (
+          <li key={i} className="flex items-center gap-3">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{step}</span>
           </li>
         ))}
       </ol>
 
-      {/* Script block */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Your Apps Script</span>
-          <button
-            onClick={handleCopy}
-            disabled={loading || !token}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {copied ? (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-                Copied!
-              </>
-            ) : (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy script
-              </>
-            )}
-          </button>
-        </div>
-
-        <div className="relative">
-          {loading ? (
-            <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <pre className="bg-gray-900 text-gray-100 text-xs rounded-xl p-4 overflow-auto max-h-64 leading-relaxed select-all">
-              {token ? buildScript(token) : '// Token not available'}
-            </pre>
-          )}
-        </div>
-      </div>
-
-      {/* Regenerate token */}
-      <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-          Regenerating your token will invalidate your existing Apps Script. You'll need to copy and paste the new script.
-        </p>
-        {confirmRegen ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 dark:text-gray-400">Are you sure?</span>
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              {regenerating ? 'Regenerating…' : 'Yes, regenerate'}
-            </button>
-            <button
-              onClick={() => setConfirmRegen(false)}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmRegen(true)}
-            className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-          >
-            Regenerate token
-          </button>
-        )}
-      </div>
+      <button
+        onClick={onConnect}
+        className="w-full flex items-center justify-center gap-2.5 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
+      >
+        <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+          <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Connect Gmail
+      </button>
     </div>
   )
 }

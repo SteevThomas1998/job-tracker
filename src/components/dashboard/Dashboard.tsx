@@ -14,14 +14,20 @@ type ViewMode = 'list' | 'kanban'
 interface Props {
   externalAddOpen?: boolean
   onExternalAddClose?: () => void
+  onMounted?: () => void
 }
 
-export default function Dashboard({ externalAddOpen = false, onExternalAddClose }: Props) {
+export default function Dashboard({ externalAddOpen = false, onExternalAddClose, onMounted }: Props) {
   const { applications, addApplication, updateApplication, patchStatus, deleteApplication } = useApplications()
   const { filters, setFilters, filtered } = useFilters(applications)
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+
+  useEffect(() => {
+    onMounted?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (externalAddOpen) {
