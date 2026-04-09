@@ -11,9 +11,10 @@ function parseCookies(header: string): Record<string, string> {
 }
 
 function frontendUrl(): string {
-  return process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:5173'
+  // FRONTEND_URL takes priority (set to https://www.stealeen.com in Vercel env vars)
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'http://localhost:5173'
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
