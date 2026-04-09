@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
+import OpenAI from 'openai'
 
 type ApplicationStatus =
   | 'Saved' | 'Applied' | 'Phone Screen' | 'Interview Scheduled'
@@ -21,8 +22,15 @@ interface ParsedEmail {
   job_url: string | null
   status: ApplicationStatus
   date_applied: string
+  salary_range: string | null
   notes: string | null
+  contact_person: string | null
 }
+
+const VALID_STATUSES: ApplicationStatus[] = [
+  'Saved', 'Applied', 'Phone Screen', 'Interview Scheduled',
+  'Technical Assessment', 'Offer Received', 'Rejected', 'Withdrawn',
+]
 
 function requireEnv(name: string): string {
   const val = process.env[name]
@@ -38,8 +46,8 @@ const ATS_DOMAINS = new Set([
   'indeed.com', 'linkedin.com', 'glassdoor.com', 'ziprecruiter.com', 'monster.com',
 ])
 
-// ── Noise patterns — skip immediately ─────────────────────────────────────
-const NOISE_RE = /newsletter|digest|jobs you may like|jobs based on|recommended jobs|top jobs for you|your weekly|people also viewed|suggested jobs|jobs near you|visa application|police certificate|financial aid|passport|police verification|financial aid|credit card|bank account|insurance|hiring graduates|hiring freshers|career for freshers|we are hiring \d+|save up to|flash sale/i
+// ── Noise patterns — skip immediately (never call AI) ─────────────────────
+const NOISE_RE = /newsletter|digest|jobs you may like|jobs based on|recommended jobs|top jobs for you|your weekly|people also viewed|suggested jobs|jobs near you|visa application|police certificate|financial aid|passport|police verification|credit card|bank account|insurance|hiring graduates|hiring freshers|career for freshers|we are hiring \d+|save up to|flash sale/i
 
 // ── Job subject patterns ───────────────────────────────────────────────────
 const JOB_SUBJECT_RE = /thank you for applying|your application|job application|application received|application submitted|applied for|we received your application|indeed application|linkedin.*application|interview|job offer|offer letter|we reviewed your|next steps|moving forward|not moving forward|regret to inform|unfortunately|position has been filled|technical assessment|coding challenge|take.?home test/i
@@ -58,26 +66,21 @@ function detectStatus(subject: string, body: string): ApplicationStatus {
 
 // ── Company extraction ────────────────────────────────────────────────────
 function extractCompany(subject: string, from: string): string | null {
-  // "Indeed Application: Title at Company"
   let m = subject.match(/\bat\s+([A-Z][^|,\n]{2,40})(?:\s*[|,]|$)/i)
   if (m) return m[1].trim()
 
-  // "Your application to Company"
   m = subject.match(/\bto\s+([A-Z][A-Za-z0-9 &.'-]{2,40})(?:\s+(?:has|for|is|–|-)|$)/i)
   if (m) return m[1].trim()
 
-  // " - Company" or " | Company" at end of subject
   m = subject.match(/[-|]\s*([A-Z][A-Za-z0-9 &.'-]{2,40})\s*$/)
   if (m) return m[1].trim()
 
-  // From display name: "Acme Corp <jobs@acme.com>" — take display name if it looks like a company
   m = from.match(/^"?([^"<@\n]{3,50})"?\s*</i)
   if (m) {
     const name = m[1].trim()
     if (!/no.?reply|recruiting|talent|careers|jobs|hr |noreply/i.test(name)) return name
   }
 
-  // Fall back to sender domain
   m = from.match(/@([\w.-]+)/)
   if (m) {
     const domain = m[1].replace(/\.(com|org|net|io|co\.uk|co|app)$/i, '')
@@ -89,23 +92,18 @@ function extractCompany(subject: string, from: string): string | null {
 
 // ── Job title extraction ──────────────────────────────────────────────────
 function extractJobTitle(subject: string, body: string): string | null {
-  // "Indeed Application: Software Engineer"
   let m = subject.match(/indeed application:\s*(.+?)(?:\s+at\s+|\s*$)/i)
   if (m) return m[1].trim()
 
-  // "LinkedIn: Your application was sent to X — Job Title"
   m = subject.match(/—\s*(.+?)\s*(?:at\s+\w|$)/i)
   if (m && m[1].length < 80) return m[1].trim()
 
-  // "Your application for Software Engineer"
   m = subject.match(/(?:application for|applied for|applying for|re:\s*)([A-Z][^|,\n]{3,60})(?:\s+(?:at|position|role)|$)/i)
   if (m) return m[1].trim()
 
-  // "for the <Title> role/position"
   m = subject.match(/for the\s+(.+?)\s+(?:role|position|job)/i)
   if (m) return m[1].trim()
 
-  // Body: "position of <Title>", "role of <Title>", "the <Title> position"
   m = body.match(/(?:position of|role of|the position of|applying for(?: the)?)\s+([A-Z][^.\n,]{3,60}?)(?:\s+(?:at|with|position|role)|[.,\n])/i)
   if (m) return m[1].trim()
 
@@ -128,42 +126,103 @@ function extractJobUrl(body: string): string | null {
 
 // ── Mass blast detection ──────────────────────────────────────────────────
 function isMassBlast(body: string): boolean {
-  // Multiple different job titles listed = mass broadcast
   const titleMatches = body.match(/\b(analyst|engineer|manager|developer|designer|coordinator|associate|specialist|intern)\b/gi) ?? []
   const uniqueTitles = new Set(titleMatches.map(t => t.toLowerCase()))
   return uniqueTitles.size >= 4
 }
 
-// ── Main parser ───────────────────────────────────────────────────────────
+// ── Rule-based parser ─────────────────────────────────────────────────────
 function parseEmail(p: IngestPayload): ParsedEmail | null {
   const { subject, from, body, date } = p
 
-  // Reject noise immediately
   if (NOISE_RE.test(subject)) return null
 
-  // Must either be from a known ATS domain or have a job-related subject
   const senderDomain = (from.match(/@([\w.-]+)/) ?? [])[1] ?? ''
   const isATS = ATS_DOMAINS.has(senderDomain)
   const hasJobSubject = JOB_SUBJECT_RE.test(subject)
   if (!isATS && !hasJobSubject) return null
 
-  // Reject mass blasts
   if (isMassBlast(body)) return null
 
-  const company = extractCompany(subject, from)
   const job_title = extractJobTitle(subject, body)
-
-  // Need at least a job title to be useful
   if (!job_title) return null
 
   return {
-    company,
+    company: extractCompany(subject, from),
     job_title,
     location: extractLocation(subject, body),
     job_url: extractJobUrl(body),
     status: detectStatus(subject, body),
     date_applied: date.slice(0, 10),
+    salary_range: null,
     notes: null,
+    contact_person: null,
+  }
+}
+
+// ── GPT-4o-mini fallback ──────────────────────────────────────────────────
+async function callGPTFallback(p: IngestPayload): Promise<ParsedEmail | null> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+  const prompt = `You are a strict job-application email classifier. Analyze this email and return ONLY valid JSON — no markdown, no explanation.
+
+Email:
+Subject: ${p.subject}
+From: ${p.from}
+Date: ${p.date}
+---
+${p.body.slice(0, 4000)}
+---
+
+If NOT a direct personal job email (reject newsletters, mass blasts, visa/police/finance emails), return exactly: {"is_job_email": false}
+
+If IS a direct personal job email, return:
+{
+  "is_job_email": true,
+  "company": "<hiring company, required>",
+  "job_title": "<specific role, required>",
+  "location": "<city/Remote or null>",
+  "job_url": "<URL or null>",
+  "status": "<one of: Applied | Phone Screen | Interview Scheduled | Technical Assessment | Offer Received | Rejected | Withdrawn>",
+  "salary_range": "<salary if mentioned or null>",
+  "notes": "<1-2 sentence summary or null>",
+  "contact_person": "<recruiter name or null>"
+}
+
+Status rules: application confirmation→Applied, recruiter outreach for specific role→Phone Screen, interview invite→Interview Scheduled, take-home test/coding challenge→Technical Assessment, offer letter→Offer Received, rejection→Rejected.`
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    max_tokens: 512,
+    temperature: 0,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const raw = (response.choices[0].message.content ?? '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+
+  let parsed: Record<string, unknown>
+  try { parsed = JSON.parse(raw) } catch { return null }
+
+  if (!parsed.is_job_email || !parsed.job_title) return null
+
+  const status = VALID_STATUSES.includes(parsed.status as ApplicationStatus)
+    ? (parsed.status as ApplicationStatus)
+    : 'Applied'
+
+  return {
+    company: (parsed.company as string) ?? null,
+    job_title: parsed.job_title as string,
+    location: (parsed.location as string) ?? null,
+    job_url: (parsed.job_url as string) ?? null,
+    status,
+    date_applied: p.date.slice(0, 10),
+    salary_range: (parsed.salary_range as string) ?? null,
+    notes: (parsed.notes as string) ?? null,
+    contact_person: (parsed.contact_person as string) ?? null,
   }
 }
 
@@ -171,7 +230,6 @@ function parseEmail(p: IngestPayload): ParsedEmail | null {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  // Input size limits — prevent DoS via large payloads
   const rawBody = JSON.stringify(req.body ?? {})
   if (rawBody.length > 100_000) {
     return res.status(413).json({ error: 'Payload too large' })
@@ -182,14 +240,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing required fields: token, subject, body' })
   }
 
-  // Field length limits
   if (payload.subject.length > 500 || payload.from!.length > 500 || payload.body.length > 50_000) {
     return res.status(400).json({ error: 'Field exceeds maximum length' })
   }
 
   const adminClient = createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'))
 
-  // Look up user by personal token
   const { data: tokenRow } = await adminClient
     .from('user_webhook_tokens')
     .select('user_id')
@@ -200,7 +256,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const userId = tokenRow.user_id
 
-  // Deduplication
   if (payload.message_id) {
     const { data: existing } = await adminClient
       .from('job_applications')
@@ -212,14 +267,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (existing) return res.status(200).json({ ok: false, skipped: true, reason: 'already processed' })
   }
 
-  // Parse email with rules
-  const parsed = parseEmail(payload as IngestPayload)
-  if (!parsed) return res.status(200).json({ ok: false, skipped: true, reason: 'not a job application email' })
+  // 1. Try rule-based parser (free)
+  let parsed = parseEmail(payload as IngestPayload)
 
-  // Fall back to sender domain for company if extraction failed
+  // 2. Fall back to GPT-4o-mini if rules failed and key is configured
+  if (!parsed && process.env.OPENAI_API_KEY) {
+    parsed = await callGPTFallback(payload as IngestPayload)
+  }
+
+  if (!parsed) {
+    return res.status(200).json({ ok: false, skipped: true, reason: 'not a job application email' })
+  }
+
+  // Company fallback to sender domain
   if (!parsed.company) {
     const m = payload.from!.match(/@([\w.-]+)/)
-    parsed.company = m ? m[1].replace(/\.(com|org|net|io|co\.uk|co|app)$/i, '').replace(/^./, c => c.toUpperCase()) : 'Unknown Company'
+    parsed.company = m
+      ? m[1].replace(/\.(com|org|net|io|co\.uk|co|app)$/i, '').replace(/^./, c => c.toUpperCase())
+      : 'Unknown Company'
   }
 
   const { error: insertError } = await adminClient.from('job_applications').insert({
@@ -231,9 +296,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     job_url: parsed.job_url,
     status: parsed.status,
     date_applied: parsed.date_applied,
-    salary_range: null,
+    salary_range: parsed.salary_range,
     notes: parsed.notes,
-    contact_person: null,
+    contact_person: parsed.contact_person,
   })
 
   if (insertError) {
