@@ -22,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .eq('user_id', user.id)
     .single()
 
+  res.setHeader('Cache-Control', 'no-store')
   if (!data) return res.status(200).json({ connected: false })
   return res.status(200).json({ connected: true, email: data.email, connectedAt: data.updated_at })
 }
