@@ -29,18 +29,21 @@ export const VALID_STATUSES: ApplicationStatus[] = [
 ]
 
 // ── Known ATS / job-related sender domains ────────────────────────────────
+// Note: linkedin.com and indeed.com are intentionally excluded — they send mostly
+// newsletters and job alerts. Their actual application confirmation emails are caught
+// by JOB_SUBJECT_RE patterns instead (e.g. "indeed application", "linkedin.*application").
 export const ATS_DOMAINS = new Set([
   'greenhouse.io', 'lever.co', 'jobvite.com', 'workday.com', 'myworkdayjobs.com',
   'icims.com', 'taleo.net', 'brassring.com', 'smartrecruiters.com', 'ashbyhq.com',
   'rippling.com', 'bamboohr.com', 'jazz.co', 'recruitee.com', 'pinpointhq.com',
-  'indeed.com', 'linkedin.com', 'glassdoor.com', 'ziprecruiter.com', 'monster.com',
+  'glassdoor.com', 'ziprecruiter.com',
   'seemehired.com', 'occupop.com', 'occupop-mail.com', 'cezannehr.com',
   'rezoomo.com', 'sigmar.ie', 'irishjobs.ie', 'publicjobs.ie', 'jobs.ie',
   'totaljobs.com', 'reed.co.uk', 'cv-library.co.uk', 'cwjobs.co.uk',
 ])
 
 // ── Noise patterns ────────────────────────────────────────────────────────
-export const NOISE_RE = /newsletter|digest|jobs you may like|jobs based on|recommended jobs|top jobs for you|your weekly|people also viewed|suggested jobs|jobs near you|visa application|police certificate|financial aid|passport|police verification|credit card|bank account|insurance|hiring graduates|hiring freshers|career for freshers|we are hiring \d+|save up to|flash sale/i
+export const NOISE_RE = /newsletter|digest|jobs you may like|jobs based on|recommended jobs|top jobs for you|your weekly|people also viewed|suggested jobs|jobs near you|job alert|job alerts|jobs alert|new jobs for you|jobs recommended|jobs matching|\d+ new jobs|new job matches|jobs found for|salary insights|visa application|police certificate|financial aid|passport|police verification|credit card|bank account|insurance|hiring graduates|hiring freshers|career for freshers|we are hiring \d+|save up to|flash sale|unsubscribe|view in browser|email preferences/i
 
 // ── Job subject patterns ──────────────────────────────────────────────────
 export const JOB_SUBJECT_RE = /thank you for applying|your application|job application|application received|application submitted|application success|application update|applied for|we received your application|indeed application|linkedin.*application|interview|job offer|offer letter|we reviewed your|next steps|moving forward|not moving forward|regret to inform|unfortunately|position has been filled|technical assessment|coding challenge|take.?home test/i
@@ -149,8 +152,17 @@ export function parseEmail(p: EmailFields): ParsedEmail | null {
   const job_title = extractJobTitle(subject, body)
   if (!job_title) return null
 
+  // Reject suspiciously generic or low-quality extractions
+  const GENERIC_WORDS = /^(remote|hybrid|unknown|n\/a|job|position|role|opportunity|vacancy|opening|alert|update|notification|info|null)$/i
+  if (GENERIC_WORDS.test(job_title.trim())) return null
+
+  const company = extractCompany(subject, from)
+
+  // Skip if company and job title are identical (bad extraction)
+  if (company && company.toLowerCase() === job_title.toLowerCase()) return null
+
   return {
-    company: extractCompany(subject, from),
+    company,
     job_title,
     location: extractLocation(subject, body),
     job_url: extractJobUrl(body),

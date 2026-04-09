@@ -79,19 +79,24 @@ export default function GmailManage({ status, backfilling, disconnecting, onDisc
         )}
       </button>
 
-      {/* Divider + disconnect */}
-      <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex justify-end">
-        <button
-          onClick={onDisconnect}
-          disabled={disconnecting}
-          className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Disconnect */}
+      <button
+        onClick={onDisconnect}
+        disabled={disconnecting}
+        className="w-full flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-red-300 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm group"
+      >
+        <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 flex items-center justify-center flex-shrink-0 transition-colors">
+          <svg className="w-4 h-4 text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          {disconnecting ? 'Disconnecting…' : 'Disconnect Gmail'}
-        </button>
-      </div>
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+            {disconnecting ? 'Disconnecting…' : 'Disconnect Gmail'}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Remove Gmail access from Stealeen</p>
+        </div>
+      </button>
     </div>
   )
 }
