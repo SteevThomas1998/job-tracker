@@ -50,7 +50,7 @@ const ATS_DOMAINS = new Set([
 const NOISE_RE = /newsletter|digest|jobs you may like|jobs based on|recommended jobs|top jobs for you|your weekly|people also viewed|suggested jobs|jobs near you|visa application|police certificate|financial aid|passport|police verification|credit card|bank account|insurance|hiring graduates|hiring freshers|career for freshers|we are hiring \d+|save up to|flash sale/i
 
 // ── Job subject patterns ───────────────────────────────────────────────────
-const JOB_SUBJECT_RE = /thank you for applying|your application|job application|application received|application submitted|applied for|we received your application|indeed application|linkedin.*application|interview|job offer|offer letter|we reviewed your|next steps|moving forward|not moving forward|regret to inform|unfortunately|position has been filled|technical assessment|coding challenge|take.?home test/i
+const JOB_SUBJECT_RE = /thank you for applying|your application|job application|application received|application submitted|application success|applied for|we received your application|indeed application|linkedin.*application|interview|job offer|offer letter|we reviewed your|next steps|moving forward|not moving forward|regret to inform|unfortunately|position has been filled|technical assessment|coding challenge|take.?home test/i
 
 // ── Status detection ──────────────────────────────────────────────────────
 function detectStatus(subject: string, body: string): ApplicationStatus {

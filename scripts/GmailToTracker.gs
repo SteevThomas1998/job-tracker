@@ -20,7 +20,8 @@ var CONFIG = {
 var SEARCH_QUERY = [
   '(',
   '  subject:("thank you for applying" OR "your application" OR "job application" OR',
-  '           "application received" OR "application submitted" OR "applied for" OR',
+  '           "application received" OR "application submitted" OR "application success" OR',
+  '           "applied for" OR',
   '           "interview" OR "job offer" OR "offer letter" OR "we reviewed your" OR',
   '           "next steps" OR "moving forward with your" OR "not moving forward" OR',
   '           "regret to inform" OR "unfortunately" OR "position has been filled" OR',
