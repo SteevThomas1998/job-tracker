@@ -44,6 +44,10 @@ const ATS_DOMAINS = new Set([
   'icims.com', 'taleo.net', 'brassring.com', 'smartrecruiters.com', 'ashbyhq.com',
   'rippling.com', 'bamboohr.com', 'jazz.co', 'recruitee.com', 'pinpointhq.com',
   'indeed.com', 'linkedin.com', 'glassdoor.com', 'ziprecruiter.com', 'monster.com',
+  // Regional / smaller platforms
+  'seemehired.com', 'occupop.com', 'occupop-mail.com', 'cezannehr.com',
+  'rezoomo.com', 'sigmar.ie', 'irishjobs.ie', 'publicjobs.ie', 'jobs.ie',
+  'totaljobs.com', 'reed.co.uk', 'cv-library.co.uk', 'cwjobs.co.uk',
 ])
 
 // ── Noise patterns — skip immediately (never call AI) ─────────────────────
@@ -104,8 +108,23 @@ function extractJobTitle(subject: string, body: string): string | null {
   m = subject.match(/for the\s+(.+?)\s+(?:role|position|job)/i)
   if (m) return m[1].trim()
 
+  // Body: "position of <Title>", "role of <Title>", "applying for <Title>"
   m = body.match(/(?:position of|role of|the position of|applying for(?: the)?)\s+([A-Z][^.\n,]{3,60}?)(?:\s+(?:at|with|position|role)|[.,\n])/i)
   if (m) return m[1].trim()
+
+  // Body: "right fit for the <Title>", "suitable for the <Title>", "selected for the <Title>"
+  m = body.match(/(?:right fit for(?: the)?|suitable for(?: the)?|selected for(?: the)?|progressing with(?: the)?|move forward with(?: the)?)\s+([A-Z][^.\n,(]{3,60}?)(?:\s*[–\-,(]|$)/im)
+  if (m) return m[1].trim()
+
+  // Body: "your application for <Title>"
+  m = body.match(/your (?:recent )?application for(?: the)?\s+([A-Z][^.\n,]{3,60}?)(?:\s+(?:at|with|role|position)|[.,\n])/i)
+  if (m) return m[1].trim()
+
+  // Subject: " - <Title>" pattern (company is elsewhere) e.g. "Job Application Update - Carechoice" → title from body
+  // Subject: "update" or "application update" with title only in body — already handled above
+  // Last resort: extract from subject dash-separated segment that looks like a job title
+  m = subject.match(/[-–:]\s*([A-Za-z][A-Za-z0-9 /()&]{4,50})\s*$/)
+  if (m && !/update|notice|tracker|application|success|confirmation/i.test(m[1])) return m[1].trim()
 
   return null
 }
