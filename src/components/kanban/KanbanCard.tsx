@@ -2,19 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import type { JobApplication, ApplicationStatus } from '../../types'
 import { APPLICATION_STATUSES } from '../../types'
 import { STATUS_CONFIG } from '../../utils/statusConfig'
+import { formatDate } from '../../utils/dateUtils'
 import StatusBadge from '../common/StatusBadge'
 
 interface Props {
   app: JobApplication
   onEdit: (app: JobApplication) => void
   onStatusChange: (id: string, status: ApplicationStatus) => void
-}
-
-function formatDate(iso: string) {
-  if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
-  const date = new Date(Number(y), Number(m) - 1, Number(d))
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default function KanbanCard({ app, onEdit, onStatusChange }: Props) {
@@ -92,7 +86,7 @@ export default function KanbanCard({ app, onEdit, onStatusChange }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(app.dateApplied)}</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(app.dateApplied, false)}</span>
       </div>
 
       {/* Fixed-position dropdown to escape overflow-x:auto scroll container */}

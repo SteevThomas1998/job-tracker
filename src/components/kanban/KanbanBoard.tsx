@@ -7,7 +7,6 @@ interface Props {
   applications: JobApplication[]
   onStatusChange: (id: string, status: ApplicationStatus) => void
   onEdit: (app: JobApplication) => void
-  onDelete: (id: string) => void
 }
 
 export default function KanbanBoard({ applications, onStatusChange, onEdit }: Props) {

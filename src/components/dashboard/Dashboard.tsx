@@ -103,7 +103,6 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose,
             applications={filtered}
             onStatusChange={patchStatus}
             onEdit={setEditingApp}
-            onDelete={deleteApplication}
           />
         )}
       </div>

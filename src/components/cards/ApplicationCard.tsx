@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { JobApplication, ApplicationStatus } from '../../types'
 import { APPLICATION_STATUSES } from '../../types'
 import { STATUS_CONFIG } from '../../utils/statusConfig'
+import { formatDate } from '../../utils/dateUtils'
 import StatusBadge from '../common/StatusBadge'
 import ConfirmDialog from '../common/ConfirmDialog'
 
@@ -10,13 +11,6 @@ interface Props {
   onEdit: (app: JobApplication) => void
   onDelete: (id: string) => void
   onStatusChange: (id: string, status: ApplicationStatus) => void
-}
-
-function formatDate(iso: string) {
-  if (!iso) return '—'
-  const [y, m, d] = iso.split('-')
-  const date = new Date(Number(y), Number(m) - 1, Number(d))
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange }: Props) {
