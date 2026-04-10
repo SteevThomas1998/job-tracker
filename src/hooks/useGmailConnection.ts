@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
+
 interface GmailStatus {
   connected: boolean
   email: string | null
@@ -12,9 +13,10 @@ export function useGmailConnection() {
   const [loading, setLoading] = useState(true)
   const [polling, setPolling] = useState(false)
   const [backfilling, setBackfilling] = useState(false)
-  const [importResult, setImportResult] = useState<{ inserted: number } | null>(null)
+  const [importResult, setImportResult] = useState<{ inserted: number; hasMore: boolean } | null>(null)
   const [disconnecting, setDisconnecting] = useState(false)
   const pollingRef = useRef(false)
+  const nextPageTokenRef = useRef<string | undefined>(undefined)
 
   async function getAuthHeader(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession()
@@ -57,16 +59,23 @@ export function useGmailConnection() {
     setBackfilling(true)
     setImportResult(null)
     try {
-      const res = await fetch('/api/gmail-poll?backfill=true', {
+      const token = nextPageTokenRef.current
+      const url = token
+        ? `/api/gmail-poll?backfill=true&pageToken=${encodeURIComponent(token)}`
+        : '/api/gmail-poll?backfill=true'
+      const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: auth },
       })
       if (res.ok) {
         const data = await res.json()
-        const total = Object.values(data.results ?? {}).reduce(
-          (sum: number, r: unknown) => sum + ((r as { inserted: number }).inserted ?? 0), 0
-        )
-        setImportResult({ inserted: total as number })
+        const userResult = Object.values(data.results ?? {})[0] as
+          | { inserted: number; nextPageToken?: string }
+          | undefined
+        const inserted = userResult?.inserted ?? 0
+        const nextToken = userResult?.nextPageToken
+        nextPageTokenRef.current = nextToken
+        setImportResult({ inserted, hasMore: !!nextToken })
       }
     } finally {
       setBackfilling(false)
@@ -100,6 +109,14 @@ export function useGmailConnection() {
 
   useEffect(() => {
     fetchStatus()
+  }, [fetchStatus])
+
+  // Re-fetch status when auth session changes (e.g. token refreshed after login)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) fetchStatus()
+    })
+    return () => subscription.unsubscribe()
   }, [fetchStatus])
 
   return { status, loading, polling, backfilling, importResult, disconnecting, connect, disconnect, triggerPoll, importPastEmails }

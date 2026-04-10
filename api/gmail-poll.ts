@@ -76,8 +76,8 @@ function getHeader(msg: GmailMessage, name: string): string {
   return msg.payload.headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
 }
 
-async function getMessageIds(accessToken: string, historyId: string | null, backfill = false): Promise<{ ids: string[]; newHistoryId: string | null }> {
-  if (backfill) return searchMessages(accessToken, '365d')
+async function getMessageIds(accessToken: string, historyId: string | null, backfill = false, pageToken?: string): Promise<{ ids: string[]; newHistoryId: string | null; nextPageToken?: string }> {
+  if (backfill) return searchMessages(accessToken, '365d', 20, pageToken)
   // Incremental via History API
   if (historyId) {
     const res = await fetch(
@@ -99,28 +99,28 @@ async function getMessageIds(accessToken: string, historyId: string | null, back
     }
   }
 
-  // Fallback: search last 7 days (or 365 days for backfill)
-  return searchMessages(accessToken, backfill ? '365d' : '7d')
+  // Fallback: search last 7 days
+  return searchMessages(accessToken, '7d')
 }
 
-async function searchMessages(accessToken: string, period: string, maxResults = 20): Promise<{ ids: string[]; newHistoryId: null }> {
+async function searchMessages(accessToken: string, period: string, maxResults = 20, pageToken?: string): Promise<{ ids: string[]; newHistoryId: null; nextPageToken?: string }> {
   const q = encodeURIComponent(
     `(subject:("thank you for applying" OR "your application" OR "job application" OR "application received" OR "application submitted" OR "application success" OR "application update" OR "interview" OR "job offer" OR "offer letter" OR "indeed application" OR "thank you for your application" OR "right fit for" OR "we have reviewed your application") OR from:(greenhouse.io OR lever.co OR ashbyhq.com OR workday.com OR jobvite.com OR indeed.com OR linkedin.com OR seemehired.com OR occupop.com OR cezannehr.com OR rezoomo.com)) newer_than:${period}`,
   )
-  const res = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=${maxResults}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  )
+  let url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=${maxResults}`
+  if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
   if (!res.ok) return { ids: [], newHistoryId: null }
-  const data = await res.json() as { messages?: Array<{ id: string }> }
-  return { ids: (data.messages ?? []).map(m => m.id), newHistoryId: null }
+  const data = await res.json() as { messages?: Array<{ id: string }>; nextPageToken?: string }
+  return { ids: (data.messages ?? []).map(m => m.id), newHistoryId: null, nextPageToken: data.nextPageToken }
 }
 
 async function pollForUser(
   userId: string,
   admin: ReturnType<typeof createClient>,
   backfill = false,
-): Promise<{ processed: number; inserted: number }> {
+  pageToken?: string,
+): Promise<{ processed: number; inserted: number; nextPageToken?: string }> {
   const { data: conn } = await admin
     .from('gmail_connections').select('*').eq('user_id', userId).single()
   if (!conn) return { processed: 0, inserted: 0 }
@@ -129,7 +129,7 @@ async function pollForUser(
     .from('gmail_poll_state').select('last_history_id').eq('user_id', userId).single()
 
   const accessToken = await getValidToken(conn as GmailConnection, admin)
-  const { ids: messageIds, newHistoryId } = await getMessageIds(accessToken, pollState?.last_history_id ?? null, backfill)
+  const { ids: messageIds, newHistoryId, nextPageToken } = await getMessageIds(accessToken, pollState?.last_history_id ?? null, backfill, pageToken)
 
   // Update historyId watermark
   const currentHistoryId = newHistoryId ?? await (async () => {
@@ -202,7 +202,7 @@ async function pollForUser(
     if (!error) inserted++
   }
 
-  return { processed, inserted }
+  return { processed, inserted, ...(nextPageToken ? { nextPageToken } : {}) }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -238,11 +238,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const backfill = req.query.backfill === 'true' || req.body?.backfill === true
-  const results: Record<string, { processed: number; inserted: number; error?: string }> = {}
+  const pageToken = req.query.pageToken as string | undefined
+  const results: Record<string, { processed: number; inserted: number; nextPageToken?: string; error?: string }> = {}
 
   for (const userId of userIds) {
     try {
-      results[userId] = await pollForUser(userId, admin, backfill)
+      results[userId] = await pollForUser(userId, admin, backfill, pageToken)
     } catch (e) {
       console.error(`Poll error for ${userId}:`, e)
       results[userId] = { processed: 0, inserted: 0, error: String(e) }

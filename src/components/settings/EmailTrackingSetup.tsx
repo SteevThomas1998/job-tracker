@@ -1,7 +1,7 @@
 interface Props {
   status: { connected: boolean; email: string | null }
   backfilling: boolean
-  importResult: { inserted: number } | null
+  importResult: { inserted: number; hasMore: boolean } | null
   disconnecting: boolean
   onDisconnect: () => void
   onImportPast: () => void
@@ -74,8 +74,12 @@ export default function GmailManage({ status, backfilling, importResult, disconn
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
             {importResult != null
               ? importResult.inserted === 0
-                ? 'No new applications found — click again to scan next batch'
-                : `Added ${importResult.inserted} application${importResult.inserted !== 1 ? 's' : ''} — click again for more`
+                ? importResult.hasMore
+                  ? 'No new applications found — click again to scan next batch'
+                  : 'All emails scanned — no new applications found'
+                : importResult.hasMore
+                  ? `Added ${importResult.inserted} application${importResult.inserted !== 1 ? 's' : ''} — click again for more`
+                  : `Added ${importResult.inserted} application${importResult.inserted !== 1 ? 's' : ''} — import complete`
               : 'Scans your last 12 months in batches of 20'}
           </p>
         </div>
