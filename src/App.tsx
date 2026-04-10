@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from './components/layout/Header'
 import Dashboard from './components/dashboard/Dashboard'
 import AuthPage from './components/auth/AuthPage'
+import ResetPasswordPage from './components/auth/ResetPasswordPage'
 import Modal from './components/modal/Modal'
 import GmailManage from './components/settings/EmailTrackingSetup'
 import { useDarkMode } from './hooks/useDarkMode'
@@ -12,7 +13,7 @@ export default function App() {
   const [openAdd, setOpenAdd] = useState(false)
   const [gmailModalOpen, setGmailModalOpen] = useState(false)
   const { dark, toggle: toggleDark } = useDarkMode()
-  const { session, loading, signIn, signUp, signOut } = useAuth()
+  const { session, loading, recoveryMode, signIn, signUp, signInWithGoogle, resetPassword, updatePassword, signOut } = useAuth()
   const gmail = useGmailConnection()
 
   if (loading) {
@@ -23,8 +24,19 @@ export default function App() {
     )
   }
 
+  if (recoveryMode) {
+    return <ResetPasswordPage onUpdate={updatePassword} />
+  }
+
   if (!session) {
-    return <AuthPage onSignIn={signIn} onSignUp={signUp} />
+    return (
+      <AuthPage
+        onSignIn={signIn}
+        onSignUp={signUp}
+        onGoogleSignIn={signInWithGoogle}
+        onResetPassword={resetPassword}
+      />
+    )
   }
 
   function handleGmailClick() {
