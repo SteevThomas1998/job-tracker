@@ -56,7 +56,7 @@ export default function GmailManage({ status, backfilling, importResult, disconn
       <button
         onClick={onImportPast}
         disabled={backfilling}
-        className="w-full group flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+        className="w-full group flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
       >
         <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 flex items-center justify-center flex-shrink-0 transition-colors">
           {backfilling ? (
