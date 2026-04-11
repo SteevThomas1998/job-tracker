@@ -22,6 +22,7 @@ const BLANK: ApplicationFormData = {
   salaryRange: '',
   notes: '',
   contactPerson: '',
+  followUpDate: '',
 }
 
 export default function ApplicationForm({ initialData, onSubmit, onCancel }: Props) {
@@ -146,6 +147,17 @@ export default function ApplicationForm({ initialData, onSubmit, onCancel }: Pro
           onChange={(e) => set('contactPerson', e.target.value)}
           placeholder="e.g. Jane Doe (Recruiter)"
         />
+      </div>
+
+      <div>
+        <label className={labelClass}>Follow-up reminder</label>
+        <input
+          type="date"
+          className={inputClass('followUpDate')}
+          value={form.followUpDate}
+          onChange={(e) => set('followUpDate', e.target.value)}
+        />
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Set a date to follow up if you haven't heard back</p>
       </div>
 
       <div>
