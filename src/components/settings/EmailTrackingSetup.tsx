@@ -56,13 +56,13 @@ export default function GmailManage({ status, backfilling, importResult, disconn
       <button
         onClick={onImportPast}
         disabled={backfilling}
-        className="w-full group flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+        className="w-full group flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-violet-300 dark:hover:border-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
       >
-        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 flex items-center justify-center flex-shrink-0 transition-colors">
+        <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/30 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 flex items-center justify-center flex-shrink-0 transition-colors">
           {backfilling ? (
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
           ) : (
-            <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
           )}

@@ -9,13 +9,13 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: P
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-sm">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{message}</p>
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-xl p-6 w-full max-w-sm">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{message}</p>
         <div className="mt-5 flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             Cancel
           </button>

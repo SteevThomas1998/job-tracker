@@ -5,25 +5,26 @@ interface Props {
   userEmail?: string
   onSignOut: () => void
   gmailConnected: boolean
-  onGmailClick: () => void  // connect directly if not connected, open manage modal if connected
+  onGmailClick: () => void
 }
 
 export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignOut, gmailConnected, onGmailClick }: Props) {
   return (
-    <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 dark:bg-gray-900/95 dark:border-gray-800 sticky top-0 z-30 shadow-sm">
+    <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 dark:bg-slate-900/95 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' }}>
             <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
               <path d="M15 7H9a2 2 0 0 0-2 2v.5A2 2 0 0 0 9 11.5h6a2 2 0 0 1 2 2v.5A2 2 0 0 1 15 16H8.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">Stealeen</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Stealeen</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onToggleDark}
-            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? (
@@ -38,7 +39,7 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
           </button>
 
           {userEmail && (
-            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 max-w-[160px] truncate">
+            <span className="hidden sm:block text-xs text-slate-400 dark:text-slate-500 max-w-[160px] truncate">
               {userEmail}
             </span>
           )}
@@ -50,7 +51,7 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
             className={`p-2 rounded-lg transition-colors ${
               gmailConnected
                 ? 'text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +61,7 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
 
           <button
             onClick={onSignOut}
-            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
             title="Sign out"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,7 +71,8 @@ export default function Header({ onAdd, onToggleDark, isDark, userEmail, onSignO
 
           <button
             onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
+            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg active:scale-95 transition-all shadow-md shadow-violet-200 dark:shadow-violet-950 hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

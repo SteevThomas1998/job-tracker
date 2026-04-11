@@ -64,13 +64,13 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose,
 
         {/* View toggle + count */}
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium tracking-wide uppercase text-gray-400 dark:text-gray-500">
+          <p className="text-xs font-medium tracking-wide uppercase text-slate-400 dark:text-slate-500">
             {filtered.length} of {applications.length} application{applications.length !== 1 ? 's' : ''}
           </p>
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
               title="List view"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose,
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+              className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'kanban' ? 'bg-white dark:bg-slate-700 shadow-sm text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
               title="Board view"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

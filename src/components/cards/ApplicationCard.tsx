@@ -81,7 +81,7 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
                       <span className={s === app.status ? 'font-semibold' : ''}>{s}</span>
                       {s === app.status && (
-                        <svg className="ml-auto w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="ml-auto w-3 h-3 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -107,7 +107,7 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
               )}
               <button
                 onClick={() => onEdit(app)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors duration-150"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950 transition-colors duration-150"
                 title="Edit"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +152,7 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
                   href={app.jobUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-blue-600 dark:text-blue-400 hover:underline truncate"
+                  className="block text-violet-600 dark:text-violet-400 hover:underline truncate"
                 >
                   {app.jobUrl}
                 </a>

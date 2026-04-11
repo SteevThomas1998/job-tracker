@@ -22,7 +22,7 @@ export default function KanbanColumn({ status, applications, onDrop, onEdit, onS
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border} ${darkBg} ${darkText} ${darkBorder}`}>
           {status}
         </span>
-        <span className="text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+        <span className="text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
           {applications.length}
         </span>
       </div>
@@ -41,8 +41,8 @@ export default function KanbanColumn({ status, applications, onDrop, onEdit, onS
         }}
         className={`flex-1 min-h-[120px] rounded-xl p-2 space-y-2 transition-all duration-150 ${
           isDragOver
-            ? 'bg-blue-50 dark:bg-blue-950/30 ring-2 ring-blue-400 dark:ring-blue-500'
-            : 'bg-gray-50 dark:bg-gray-800/50'
+            ? 'bg-violet-50 dark:bg-violet-950/30 ring-2 ring-violet-400 dark:ring-violet-500'
+            : 'bg-slate-50 dark:bg-slate-800/50'
         }`}
       >
         {applications.map((app) => (
@@ -51,10 +51,10 @@ export default function KanbanColumn({ status, applications, onDrop, onEdit, onS
         {applications.length === 0 && (
           <div className={`h-20 flex items-center justify-center rounded-lg border-2 border-dashed transition-colors duration-150 ${
             isDragOver
-              ? 'border-blue-400 dark:border-blue-500'
-              : 'border-gray-200 dark:border-gray-700'
+              ? 'border-violet-400 dark:border-violet-500'
+              : 'border-slate-200 dark:border-slate-700'
           }`}>
-            <span className="text-xs text-gray-400 dark:text-gray-600">Drop here</span>
+            <span className="text-xs text-slate-400 dark:text-slate-600">Drop here</span>
           </div>
         )}
       </div>

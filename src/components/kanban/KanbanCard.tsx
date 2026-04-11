@@ -65,7 +65,7 @@ export default function KanbanCard({ app, onEdit, onStatusChange }: Props) {
         </div>
         <button
           onClick={() => onEdit(app)}
-          className="p-1 rounded-md text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors flex-shrink-0"
+          className="p-1 rounded-md text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950 transition-colors flex-shrink-0"
           title="Edit"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ export default function KanbanCard({ app, onEdit, onStatusChange }: Props) {
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
                 <span className={s === app.status ? 'font-semibold' : ''}>{s}</span>
                 {s === app.status && (
-                  <svg className="ml-auto w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="ml-auto w-3 h-3 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
