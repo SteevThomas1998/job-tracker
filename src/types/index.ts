@@ -28,7 +28,7 @@ export interface JobApplication {
   updatedAt: string
 }
 
-export type ApplicationFormData = Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>
+export type ApplicationFormData = Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
 
 export interface StatusHistoryEntry {
   id: string
