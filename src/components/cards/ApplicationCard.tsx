@@ -30,8 +30,21 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
     return () => document.removeEventListener('mousedown', handle)
   }, [statusOpen])
 
-  const hasDetails = app.notes || app.contactPerson || app.salaryRange || app.jobUrl
+  const hasDetails = app.notes || app.contactPerson || app.salaryRange || app.jobUrl || app.statusHistory.length > 0
   const { accentBorder } = STATUS_CONFIG[app.status]
+
+  // Follow-up state
+  const followUp = app.followUpDate
+    ? (() => {
+        const today = new Date(); today.setHours(0, 0, 0, 0)
+        const due = new Date(app.followUpDate + 'T00:00:00')
+        const diff = Math.round((due.getTime() - today.getTime()) / 86400000)
+        if (diff < 0) return { label: `Overdue by ${Math.abs(diff)}d`, style: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' }
+        if (diff === 0) return { label: 'Follow up today', style: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' }
+        if (diff <= 3) return { label: `Follow up in ${diff}d`, style: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' }
+        return { label: `Follow up ${formatDate(app.followUpDate)}`, style: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700' }
+      })()
+    : null
 
   return (
     <>
@@ -51,6 +64,14 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
               )}
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{app.jobTitle}</p>
+            {followUp && (
+              <span className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${followUp.style}`}>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {followUp.label}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -162,6 +183,35 @@ export default function ApplicationCard({ app, onEdit, onDelete, onStatusChange 
               <div className="sm:col-span-2">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</span>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{app.notes}</p>
+              </div>
+            )}
+            {app.statusHistory.length > 0 && (
+              <div className="sm:col-span-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-2">Timeline</span>
+                <div className="flex items-start gap-0">
+                  {app.statusHistory.map((entry, i) => {
+                    const { bg, text, border, darkBg, darkText, darkBorder, dot } = STATUS_CONFIG[entry.status]
+                    const isLast = i === app.statusHistory.length - 1
+                    const d = new Date(entry.changedAt)
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    return (
+                      <div key={entry.id} className="flex items-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${bg} ${text} ${border} ${darkBg} ${darkText} ${darkBorder}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                            {entry.status}
+                          </span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{dateStr}</span>
+                        </div>
+                        {!isLast && (
+                          <svg className="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mx-1 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

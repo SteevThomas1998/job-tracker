@@ -3,6 +3,7 @@ import type { JobApplication, ApplicationFormData, ApplicationStatus } from '../
 import { useApplications } from '../../hooks/useApplications'
 import { useFilters } from '../../hooks/useFilters'
 import StatsBar from './StatsBar'
+import FollowUpBanner from './FollowUpBanner'
 import FilterBar from './FilterBar'
 import ApplicationList from './ApplicationList'
 import KanbanBoard from '../kanban/KanbanBoard'
@@ -60,6 +61,7 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose,
             setFilters({ ...filters, statusFilter: status })
           }
         />
+        <FollowUpBanner applications={applications} onEdit={setEditingApp} />
         <FilterBar filters={filters} onChange={setFilters} />
 
         {/* View toggle + count */}
@@ -124,6 +126,7 @@ export default function Dashboard({ externalAddOpen = false, onExternalAddClose,
               salaryRange: editingApp.salaryRange,
               notes: editingApp.notes,
               contactPerson: editingApp.contactPerson,
+              followUpDate: editingApp.followUpDate,
             }}
             onSubmit={handleEditSubmit}
             onCancel={handleEditClose}

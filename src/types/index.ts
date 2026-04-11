@@ -22,11 +22,19 @@ export interface JobApplication {
   salaryRange: string
   notes: string
   contactPerson: string
+  followUpDate: string   // ISO date string, empty string = not set
+  statusHistory: StatusHistoryEntry[]
   createdAt: string
   updatedAt: string
 }
 
 export type ApplicationFormData = Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>
+
+export interface StatusHistoryEntry {
+  id: string
+  status: ApplicationStatus
+  changedAt: string  // ISO timestamp
+}
 
 export type SortField = 'dateApplied' | 'company' | 'createdAt'
 export type SortDirection = 'asc' | 'desc'
