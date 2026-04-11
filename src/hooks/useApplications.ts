@@ -119,15 +119,10 @@ export function useApplications() {
       })
       .select()
       .single()
+    // State update is handled by the realtime INSERT subscription below —
+    // don't also update here or the row appears twice.
     if (row) {
       await writeHistory((row as { id: string }).id, data.status)
-      // Re-fetch with history
-      const { data: full } = await supabase
-        .from('job_applications')
-        .select(SELECT)
-        .eq('id', (row as { id: string }).id)
-        .single()
-      if (full) setApplications((prev) => [fromRow(full as Row), ...prev])
     }
   }
 
